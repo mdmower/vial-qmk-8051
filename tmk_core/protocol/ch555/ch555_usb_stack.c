@@ -127,18 +127,19 @@ void send_report_EP2(void *report, size_t size) {
 }
 #endif
 #ifdef USE_D1_EP1_IN
-void send_report_EP2(void *report, size_t size) {
+bool send_report_EP2(void *report, size_t size) {
     // NKRO → D1 EP1 IN
-    if (!USB_EnumStatus) return;
+    if (!USB_EnumStatus) return false;
 	if( USB_SleepStatus == 0x03 ) USB_WakeUp_PC( );
     uint8_t timeout = 255;
     while (timeout-- && ( ( D1_EP1RES & MASK_UEP_X_RES ) == UEP_X_RES_ACK )) {
         wait_us(40);
     }
-    if ( ( D1_EP1RES & MASK_UEP_X_RES ) == UEP_X_RES_ACK ) return;
+    if ( ( D1_EP1RES & MASK_UEP_X_RES ) == UEP_X_RES_ACK ) return false;
 	memcpy( pUSB_BUF_DEV1 + UX_EP1_ADDR, (uint8_t *)report, size );
 	D1_EP1T_L = size;
 	D1_EP1RES = D1_EP1RES & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
+	return true;
 }
 #endif
 #ifdef USE_D0_EP3_IN
@@ -779,8 +780,9 @@ static void send_keyboard(report_keyboard_t *report) {
 #ifdef NKRO_ENABLE
         if (1 /* TEMPFIX: hardcode nkro on until EEPROM is implemented */ || keymap_config.nkro) {
             size = sizeof(struct nkro_report);
-            send_report(SHARED_IN_EPNUM, report, size);
-            keyboard_report_sent = *report;
+            if (send_report(SHARED_IN_EPNUM, report, size)) {
+                keyboard_report_sent = *report;
+            }
             return;
         }
 #endif
