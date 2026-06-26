@@ -131,10 +131,6 @@ bool send_report_EP2(void *report, size_t size) {
     // NKRO → D1 EP1 IN
     if (!USB_EnumStatus) return false;
 	if( USB_SleepStatus == 0x03 ) USB_WakeUp_PC( );
-    uint8_t timeout = 255;
-    while (timeout-- && ( ( D1_EP1RES & MASK_UEP_X_RES ) == UEP_X_RES_ACK )) {
-        wait_us(40);
-    }
     if ( ( D1_EP1RES & MASK_UEP_X_RES ) == UEP_X_RES_ACK ) return false;
 	memcpy( pUSB_BUF_DEV1 + UX_EP1_ADDR, (uint8_t *)report, size );
 	D1_EP1T_L = size;
