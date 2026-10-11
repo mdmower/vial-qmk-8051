@@ -1,4 +1,5 @@
 #include QMK_KEYBOARD_H
+#include "led_dma.h"
 
 // Custom keycode: Win Lock
 enum {
@@ -59,12 +60,14 @@ void keyboard_post_init_user(void) {
     setPinOutput(LED_WIN_LOCK_PIN);
     writePinLow(LED_WIN_LOCK_PIN);
 }
-/* Indicator LEDs off while the host is suspended (stock 1.04 @0x794f) */
+/* Indicator LEDs and key LEDs off while the host is suspended (stock 1.04 @0x794f) */
 void suspend_power_down_user(void) {
     writePinHigh(PORT5_4);
+    led_dma_output(false);
 }
 void suspend_wakeup_init_user(void) {
     writePinLow(PORT5_4);
+    led_dma_output(true);
 }
 void housekeeping_task_user(void) {}
 

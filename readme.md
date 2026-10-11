@@ -32,11 +32,13 @@ Works:
 - Media keys, the volume roller and its press (Mute).
 - G1–G5 and Rec send F13–F18, for shortcuts set in the operating system.
 - Num Lock, Caps Lock, Scroll Lock and Win Lock LEDs. They turn off while the host is suspended.
+- Key LEDs (RGB; red only on Rec and the media keys) and side lights, driven by the CH555 LED controller. They
+  show a fixed test pattern and turn off while the host is suspended.
 - Holding Esc while plugging in the keyboard enters the bootloader. This check has been tested on a modified stock
   image that contains the same code, not on a QMK build.
 
 Not implemented:
-- Per-key RGB lighting and the red LEDs of the media keys. They stay off.
+- Lighting effects and lighting keycodes: the LEDs show only the fixed test pattern.
 - USB serial number.
 - Saved settings: the EEPROM driver keeps its data in RAM, so changes made at runtime are lost at power-off.
 - Vial: it did not work in the original port, and this branch has no Vial keymap.

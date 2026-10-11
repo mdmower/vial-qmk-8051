@@ -104,11 +104,15 @@ On the tested keyboard, a restore of firmware 1.04 gave a full 64 KB read-back i
 - Layer 1 (Fn): Fn+Esc enters the bootloader (`QK_BOOT`). Fn+Win toggles Win Lock, which blocks both Win keys and
   lights the Win Lock LED. Win Lock is off after power-up.
 - G1–G5 and Rec: F13–F17 and F18, for shortcuts set in the operating system.
+- LEDs: a fixed test pattern. The Esc and Caps Lock rows red, the number and Shift rows green, the Tab and Ctrl
+  rows blue (by matrix row, so the numpad differs); G1–G5 and the side lights white; Rec and the media keys red.
 
 ## Hardware
 
 - Key matrix: 7 rows × 18 columns. Rows P4.0–P4.6; columns P0.0–P0.7, P3.0–P3.7, P7.0–P7.1.
 - Port 5: P5.5/P5.6 volume roller; P5.4 indicator LED enable (active low); P5.3, P5.2, P5.1, P5.0 Num Lock,
   Caps Lock, Scroll Lock, Win Lock LEDs (high = on).
-- Per-key LEDs (not driven by this firmware): the CH555 LED controller, with red, green and blue rows on P4, P2
-  and P1 and common lines on P0, P3 and P7, shared with the key matrix.
+- Key LEDs and side lights: the CH555 LED controller, with red, green and blue rows on P4, P2 and P1 and common
+  lines on P0, P3 and P7, shared with the key matrix. LED row n on common line c is the LED of the key in matrix
+  row n, column c (rows 0–6); LED row 7 on common lines 0–15 drives the side lights. The keys are read in the
+  LED controller's interrupt, on each common line ([led_dma.c](led_dma.c)).

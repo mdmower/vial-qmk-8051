@@ -1,8 +1,10 @@
 ENCODER_ENABLE = yes
 
-#CUSTOM_MATRIX = lite  # matrix_scan_raw() in keyboards/redragon/k580/matrix.c reads LED ISR shadow buffer
-#RGB_MATRIX_ENABLE = yes
-#RGB_MATRIX_DRIVER = custom
+# The CH555 LED controller drives the matrix columns (its COM pins), so its interrupt
+# (led_dma.c) reads the key rows and matrix.c takes them from there.
+CUSTOM_MATRIX = lite
+SRC += led_dma.c matrix.c
+OPT_DEFS += -DCH555_LED_DMA_ENABLE
 ENCODER_MAP_ENABLE = yes
 
 
