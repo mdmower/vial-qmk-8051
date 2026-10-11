@@ -1,0 +1,18 @@
+# Redragon K580 RGB (Evision VS11K33A, CH555-family 8051): user access to the hidraw nodes that
+# util/k580_dump.py and util/evision_flash.py use.
+#   sudo cp util/udev/70-redragon-k580.rules /etc/udev/rules.d/ && sudo udevadm control --reload && sudo udevadm trigger
+# The 70- prefix matters: uaccess tags must be applied before 73-seat-late.rules.
+#
+# The rules match the hidraw node's DEVPATH (e.g. .../1-2.2:1.1/0003:320F:5000.000F/hidraw/hidraw14), so a rule
+# can select a single USB interface. HID device names use upper-case hex.
+
+# Stock firmware, interface 1 only: the Evision vendor collection (usage page 0xFF1C, usage 0x92), used for the
+# flash dump and for bootloader entry. This interface also carries the NKRO keyboard report (report ID 1), so a
+# process with access to this node can read keystrokes. Interface 0 (the boot keyboard) stays root-only.
+# Remove this rule once the stock firmware is no longer in use.
+KERNEL=="hidraw*", DEVPATH=="*:1.1/0003:320F:5000.*", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+
+# Evision OEM bootloader (firmware update mode). It reports no keystrokes, so all of its HID nodes are granted.
+KERNEL=="hidraw*", DEVPATH=="*/0003:0C45:7687.*", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+
+# The WCH factory ISP bootloader (4348:55e0) is not granted. Flashing through it overwrites the OEM bootloader.
