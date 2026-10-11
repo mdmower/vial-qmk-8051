@@ -377,7 +377,9 @@ __attribute__((weak)) void housekeeping_task_kb(void) {}
  * Override this function if you have a need to execute code for every keyboard main loop iteration.
  * This is specific to user/keymap-level functionality.
  */
+#ifndef __SDCC
 __attribute__((weak)) void housekeeping_task_user(void) {}
+#endif
 
 /** \brief housekeeping_task
  *
