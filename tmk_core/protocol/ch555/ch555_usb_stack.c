@@ -72,6 +72,15 @@ static void    send_mouse(report_mouse_t *report);
 static void    send_extra(report_extra_t *report);
 host_driver_t  ch555_usb_stack_driver = {keyboard_leds, send_keyboard, send_mouse, send_extra};
 
+#ifdef USE_D1_EP1_IN
+/* The shared endpoint (D1 EP1 IN) holds one report until the host reads it. A report that finds
+ * it busy is kept here, the latest one per report ID, and sent from protocol_post_task(). */
+static report_keyboard_t nkro_pending;
+static bool              nkro_pending_set = false;
+static report_extra_t    extra_pending[2]; /* [0] REPORT_ID_SYSTEM, [1] REPORT_ID_CONSUMER */
+static bool              extra_pending_set[2] = {false, false};
+#endif
+
 
 
 #ifdef USE_D0_EP1_IN
@@ -776,9 +785,15 @@ static void send_keyboard(report_keyboard_t *report) {
 #ifdef NKRO_ENABLE
         if (1 /* TEMPFIX: hardcode nkro on until EEPROM is implemented */ || keymap_config.nkro) {
             size = sizeof(struct nkro_report);
-            if (send_report(SHARED_IN_EPNUM, report, size)) {
-                keyboard_report_sent = *report;
+#    ifdef USE_D1_EP1_IN
+            nkro_pending_set = !send_report(SHARED_IN_EPNUM, report, size);
+            if (nkro_pending_set) {
+                memcpy(&nkro_pending, report, size);
             }
+#    else
+            send_report(SHARED_IN_EPNUM, report, size);
+#    endif
+            keyboard_report_sent = *report;
             return;
         }
 #endif
@@ -805,10 +820,35 @@ static void send_mouse(report_mouse_t *report) {
  */
 static void send_extra(report_extra_t *report) {
 #ifdef EXTRAKEY_ENABLE
+#    ifdef USE_D1_EP1_IN
+    uint8_t i = (report->report_id == REPORT_ID_CONSUMER) ? 1 : 0;
+    extra_pending_set[i] = !send_report(SHARED_IN_EPNUM, report, sizeof(report_extra_t));
+    if (extra_pending_set[i]) {
+        memcpy(&extra_pending[i], report, sizeof(report_extra_t));
+    }
+#    else
     send_report(SHARED_IN_EPNUM, report, sizeof(report_extra_t));
+#    endif
     //send_report(5, report, sizeof(report_extra_t));
 #endif
 }
+
+#ifdef USE_D1_EP1_IN
+/* Send one report kept in nkro_pending or extra_pending, if the shared endpoint is free. */
+static void send_pending_shared_report(void) {
+    uint8_t i;
+    if (nkro_pending_set) {
+        nkro_pending_set = !send_report(SHARED_IN_EPNUM, &nkro_pending, sizeof(struct nkro_report));
+        return;
+    }
+    for (i = 0; i < 2; i++) {
+        if (extra_pending_set[i]) {
+            extra_pending_set[i] = !send_report(SHARED_IN_EPNUM, &extra_pending[i], sizeof(report_extra_t));
+            return;
+        }
+    }
+}
+#endif
 
 void send_joystick(report_joystick_t *report) {
 #ifdef JOYSTICK_ENABLE
@@ -1184,6 +1224,10 @@ void protocol_post_task(void) {
         keyboard_led_state = KB_USB_SetReport;
         led_set(keyboard_led_state);
     }
+
+#ifdef USE_D1_EP1_IN
+    send_pending_shared_report();
+#endif
 
 	if( MCU_Sleep_Operate )
 	{
