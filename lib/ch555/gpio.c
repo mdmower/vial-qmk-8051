@@ -174,25 +174,25 @@ void pinModeOutputOpen(uint8_t pin) {
 #endif
 #ifdef PORT1
         case PORT1:
-        P1_MOD_OC |= ~pinmask;
+        P1_MOD_OC |=  pinmask;
         P1_DIR_PU &= ~pinmask;
         break;
 #endif
 #ifdef PORT2
         case PORT2:
-        P2_MOD_OC |= ~pinmask;
+        P2_MOD_OC |=  pinmask;
         P2_DIR_PU &= ~pinmask;
         break;
 #endif
 #ifdef PORT3
         case PORT3:
-        P3_MOD_OC |= ~pinmask;
+        P3_MOD_OC |=  pinmask;
         P3_DIR_PU &= ~pinmask;
         break;
 #endif
 #ifdef PORT4
         case PORT4:
-        P4_MOD_OC |= ~pinmask;
+        P4_MOD_OC |=  pinmask;
         P4_DIR_PU &= ~pinmask;
         break;
 #endif
@@ -235,7 +235,7 @@ void pinModeBiDi(uint8_t pin) {
 #endif
 #ifdef PORT4
         case PORT4:
-        P4_MOD_OC |= ~pinmask;
+        P4_MOD_OC |=  pinmask;
         P4_DIR_PU |=  pinmask;
         break;
 #endif
