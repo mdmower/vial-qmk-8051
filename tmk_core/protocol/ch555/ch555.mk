@@ -7,7 +7,6 @@ CH555_PATH = $(LIB_PATH)/ch555
 CH555_SRC_USB  = $(CH555_PATH)/gpio.c
 ifeq ($(strip $(RGB_MATRIX_ENABLE)), yes)
 CH555_SRC_USB += $(CH555_PATH)/rgb_matrix_ch555.c
-CH555_SRC_USB += $(CH555_PATH)/rgbload.asm
 endif
 CH555_SRC_USB += $(CH555_PATH)/flash.c
 CH555_SRC_USB += $(CH555_PATH)/hal.c
