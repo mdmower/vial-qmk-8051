@@ -111,7 +111,11 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
 };
 #endif
 
-void keyboard_post_init_user(void) {}
+void keyboard_post_init_user(void) {
+    /* P5.4 enables the indicator LEDs, active low (stock 1.04 @0xdc4b) */
+    setPinOutput(PORT5_4);
+    writePinLow(PORT5_4);
+}
 void housekeeping_task_user(void) {}
 
 bool pre_process_record_user(uint16_t keycode, keyrecord_t *record) { return true; }
