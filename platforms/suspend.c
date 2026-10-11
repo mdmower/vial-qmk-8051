@@ -13,7 +13,9 @@ __attribute__((weak)) void matrix_power_down(void) {}
  *
  * FIXME: needs doc
  */
+#ifndef __SDCC
 __attribute__((weak)) void suspend_power_down_user(void) {}
+#endif
 
 /** \brief Run keyboard level Power down
  *
@@ -27,7 +29,9 @@ __attribute__((weak)) void suspend_power_down_kb(void) {
  *
  * FIXME: needs doc
  */
+#ifndef __SDCC
 __attribute__((weak)) void suspend_wakeup_init_user(void) {}
+#endif
 
 /** \brief run keyboard level code immediately after wakeup
  *

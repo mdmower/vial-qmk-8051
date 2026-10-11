@@ -70,6 +70,7 @@ volatile UINT8  KB_USB_SetReport = 0x00;										/* */
 volatile UINT8  USB_EnumStatus = 0x00;											/* USB enumeration status */	
 volatile UINT8  USB_SleepStatus = 0x00;											/* USB sleep state */		
 volatile UINT8  MCU_Sleep_Operate = 0x00;										/* Mcu sleep operation flag */
+volatile UINT8  USB_WakeUpSent = 0x00;											/* remote wakeup signalled, no host transfer since */
 
 /*
  * Raw byte-array USB string descriptors for CH555.
@@ -253,6 +254,7 @@ void USB_Device_Init( void )
 	USB_EnumStatus = 0x00;														/* USB enumeration status */	
 	USB_SleepStatus = 0x00;														/* USB sleep state */		
 	MCU_Sleep_Operate = 0x00;													/* Mcu sleep operation flag */
+	USB_WakeUpSent = 0x00;														/* remote wakeup signalled, no host transfer since */
 	KB_USB_UpStatus = 0x00;														/* Usb keyboard and mouse upload status */
 #ifdef USE_D0_EP1_OUT
 	ep1_data_wait   = 0x00;														/* Usb keyboard and mouse upload status */
@@ -326,6 +328,11 @@ void USB_DeviceInterrupt( void ) __interrupt(INT_NO_USB) //__using(1)
 
 USB_DevIntNext:
 	us = USB_IF; 
+	if( us & ( bUX_IF_D2_TRANS | bUX_IF_D1_TRANS | bUX_IF_D0_TRANS | bUX_IF_HB_TRANS | bUX_IF_BUS_RST ) )
+	{
+		/* The host is running the bus again (see USB_WakeUp_PC) */
+		USB_WakeUpSent = 0x00;
+	}
 	if ( us & bUX_IF_HB_TRANS )
 	{
 		// -------------------------------------------------------------------
@@ -1884,6 +1891,9 @@ void USB_WakeUp_PC( void )
 {
 	UINT8  save;
 	
+	/* The resume signal also clears bUX_SUSPEND, and if the host stays asleep the bit is not set
+	 * again. USB_WakeUpSent marks the bus as still suspended until the next host transfer. */
+	USB_WakeUpSent = 0x01;
 	save = USB_CTRL;
     USB_CTRL ^= bUX_DP_PU_EN | bUX_DM_PU_EN;
     mDelaymS( 10 );  

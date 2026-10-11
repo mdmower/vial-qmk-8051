@@ -32,6 +32,7 @@
 #endif
 #include "suspend.h"
 #include "wait.h"
+#include "timer.h"
 
 #include "usb_descriptor.h"
 #include "ch555_usb_stack.h" 
@@ -1167,28 +1168,29 @@ void protocol_post_init(void) {
 	P4_LED_KEY = 0xFF; /* enable key mode (switch PORT4 from LED to GPIO) */
 }
 
-#define NO_USB_STARTUP_CHECK //TODO implement this 
+#ifndef USB_RESUME_DELAY_MS
+/* Bus active this long before the wakeup hooks run; the bus switches between suspend and active
+ * several times while a PC resumes from standby. */
+#    define USB_RESUME_DELAY_MS 500
+#endif
+
 void protocol_pre_task(void) {
 #if !defined(NO_USB_STARTUP_CHECK)
-    if (USB_DeviceState == DEVICE_STATE_Suspended) {
-        dprintln("suspending keyboard");
-        while (USB_DeviceState == DEVICE_STATE_Suspended) {
-            suspend_power_down();
-            if (USB_Device_RemoteWakeupEnabled && suspend_wakeup_condition()) {
-                //USB_Device_SendRemoteWakeup(); TODO implement this
-                clear_keyboard();
+    /* Run the QMK suspend hooks when the bus enters or leaves suspend. Unlike LUFA/ChibiOS this does
+     * not wait in a loop: the matrix is still scanned while suspended, and a key press wakes the host
+     * through USB_WakeUp_PC() in the send_report_* functions (if the host enabled remote wakeup).
+     * After that signal, the bus counts as suspended until the host makes a transfer. */
+    static bool     suspended = false;
+    static uint16_t suspend_time;
 
-#    if USB_SUSPEND_WAKEUP_DELAY > 0
-                // Some hubs, kvm switches, and monitors do
-                // weird things, with USB device state bouncing
-                // around wildly on wakeup, yielding race
-                // conditions that can corrupt the keyboard state.
-                //
-                // Pause for a while to let things settle...
-                wait_ms(USB_SUSPEND_WAKEUP_DELAY);
-#    endif
-            }
+    if ((USB_IF & bUX_SUSPEND) != 0 || USB_WakeUpSent) {
+        suspend_time = timer_read();
+        if (!suspended) {
+            suspended = true;
+            suspend_power_down();
         }
+    } else if (suspended && timer_elapsed(suspend_time) >= USB_RESUME_DELAY_MS) {
+        suspended = false;
         suspend_wakeup_init();
     }
 #endif

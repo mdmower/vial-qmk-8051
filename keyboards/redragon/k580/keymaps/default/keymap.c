@@ -131,6 +131,13 @@ void keyboard_post_init_user(void) {
     setPinOutput(LED_WIN_LOCK_PIN);
     writePinLow(LED_WIN_LOCK_PIN);
 }
+/* Indicator LEDs off while the host is suspended (stock 1.04 @0x794f) */
+void suspend_power_down_user(void) {
+    writePinHigh(PORT5_4);
+}
+void suspend_wakeup_init_user(void) {
+    writePinLow(PORT5_4);
+}
 void housekeeping_task_user(void) {}
 
 bool pre_process_record_user(uint16_t keycode, keyrecord_t *record) { return true; }

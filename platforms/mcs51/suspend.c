@@ -13,3 +13,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include "suspend.h"
+
+/** \brief Run when the USB bus enters suspend
+ *
+ * Called once per suspend by protocol_pre_task() (ch555); the MCU keeps running and scanning.
+ */
+void suspend_power_down(void) {
+    suspend_power_down_quantum();
+}
+
+/** \brief Run when the USB bus resumes
+ *
+ * The matrix is scanned throughout suspend, so the key state is still valid and is not cleared.
+ */
+void suspend_wakeup_init(void) {
+    suspend_wakeup_init_quantum();
+}
