@@ -677,6 +677,8 @@ ifneq ($(strip $(CUSTOM_MATRIX)), yes)
     ifneq ($(strip $(CUSTOM_MATRIX)), lite)
         # Include the standard or split matrix code if needed
         QUANTUM_SRC += $(QUANTUM_DIR)/matrix.c
+    else
+        OPT_DEFS += -DCUSTOM_MATRIX_LITE
     endif
 endif
 

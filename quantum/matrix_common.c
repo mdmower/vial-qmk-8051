@@ -135,10 +135,12 @@ __attribute__((weak)) void matrix_output_unselect_delay(uint8_t line, bool key_p
 }
 
 // CUSTOM MATRIX 'LITE'
+#ifndef __SDCC // no weak symbols: a CUSTOM_MATRIX = lite keyboard defines these
 __attribute__((weak)) void matrix_init_custom(void) {}
 __attribute__((weak)) bool matrix_scan_custom(matrix_row_t current_matrix[]) {
     return true;
 }
+#endif
 
 #ifdef SPLIT_KEYBOARD
 __attribute__((weak)) void matrix_slave_scan_kb(void) {
@@ -147,7 +149,7 @@ __attribute__((weak)) void matrix_slave_scan_kb(void) {
 __attribute__((weak)) void matrix_slave_scan_user(void) {}
 #endif
 
-#ifndef __SDCC
+#if !defined(__SDCC) || defined(CUSTOM_MATRIX_LITE) // no weak symbols: matrix.c defines these otherwise
 __attribute__((weak)) void matrix_init(void) {
 #ifdef SPLIT_KEYBOARD
     thisHand = isLeftHand ? 0 : (ROWS_PER_HAND);

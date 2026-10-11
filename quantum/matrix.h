@@ -76,6 +76,10 @@ void matrix_scan_kb(void);
 void matrix_init_user(void);
 void matrix_scan_user(void);
 
+/* CUSTOM_MATRIX = lite */
+void matrix_init_custom(void);
+bool matrix_scan_custom(matrix_row_t current_matrix[]);
+
 #ifdef SPLIT_KEYBOARD
 bool matrix_post_scan(void);
 void matrix_slave_scan_kb(void);
