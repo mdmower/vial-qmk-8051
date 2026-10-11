@@ -13,6 +13,7 @@
 #include "hal.h"
 #include "debug.h"
 #include "usb_device.h"
+#include "suspend.h"
 
 /******************************************************************************/
 /* constant variable definition */
@@ -1898,6 +1899,10 @@ void USB_WakeUp_PC( void )
     USB_CTRL ^= bUX_DP_PU_EN | bUX_DM_PU_EN;
     mDelaymS( 10 );  
     USB_CTRL = save;
+#if USB_SUSPEND_WAKEUP_DELAY > 0
+	/* QMK option: pause so that hubs, KVM switches and monitors can settle after the wakeup */
+	mDelaymS( USB_SUSPEND_WAKEUP_DELAY );
+#endif
 }
 
 /*******************************************************************************
