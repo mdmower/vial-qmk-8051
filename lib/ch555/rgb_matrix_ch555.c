@@ -40,53 +40,12 @@ __xdata uint8_t rgb_dma_buf[RGB_CH555_LED_COUNT][4];
 volatile uint8_t led_shadow_matrix[RGB_CH555_COLS];
 
 /* -------------------------------------------------------------------------
- * ASM helper — inlined as __naked SDCC function
+ * ASM helper — rgbload.asm
  * Clocks 8 rows × 4 bytes from xRAM into the CH555 LED PWM engine.
- * SETB 0xAE = E_DIS (IE.6) — disables interrupts during DMA feed.
- * SETB 0xD0 = PSW.0 (P bit) — CH555: copies LED_DMA into DPTR and arms
- * shadow feed mode; each subsequent MOVX also clocks byte into PWM engine.
+ * SETB P inside the ASM copies LED_DMA into DPTR and arms the feed;
  * LED_DMA auto-increments after each byte so no manual tracking needed.
  * ---------------------------------------------------------------------- */
-static void LED_LOAD_XRAM(void) __naked {
-    __asm
-        setb  0xAE              ; E_DIS - disable interrupt
-        setb  0xD0              ; P    - load DPTR from LED_DMA, arm DMA feed
-        movx  a,@dptr           ; row 0 intensity
-        movx  a,@dptr           ; row 0 R
-        movx  a,@dptr           ; row 0 G
-        movx  a,@dptr           ; row 0 B
-        movx  a,@dptr           ; row 1 intensity
-        movx  a,@dptr           ; row 1 R
-        movx  a,@dptr           ; row 1 G
-        movx  a,@dptr           ; row 1 B
-        movx  a,@dptr           ; row 2 intensity
-        movx  a,@dptr           ; row 2 R
-        movx  a,@dptr           ; row 2 G
-        movx  a,@dptr           ; row 2 B
-        movx  a,@dptr           ; row 3 intensity
-        movx  a,@dptr           ; row 3 R
-        movx  a,@dptr           ; row 3 G
-        movx  a,@dptr           ; row 3 B
-        movx  a,@dptr           ; row 4 intensity
-        movx  a,@dptr           ; row 4 R
-        movx  a,@dptr           ; row 4 G
-        movx  a,@dptr           ; row 4 B
-        movx  a,@dptr           ; row 5 intensity
-        movx  a,@dptr           ; row 5 R
-        movx  a,@dptr           ; row 5 G
-        movx  a,@dptr           ; row 5 B
-        movx  a,@dptr           ; row 6 intensity
-        movx  a,@dptr           ; row 6 R
-        movx  a,@dptr           ; row 6 G
-        movx  a,@dptr           ; row 6 B
-        movx  a,@dptr           ; row 7 intensity
-        movx  a,@dptr           ; row 7 R
-        movx  a,@dptr           ; row 7 G
-        movx  a,@dptr           ; row 7 B
-        clr   0xAE              ; CLR E_DIS - re-enable interrupt
-        ret
-    __endasm;
-}
+extern void LED_LOAD_XRAM(void);
 
 /* -------------------------------------------------------------------------
  * LED + key scan ISR
