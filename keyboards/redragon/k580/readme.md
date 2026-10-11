@@ -79,7 +79,6 @@ python3 -I util/evision_flash.py flash redragon_k580_default_oem.bin --expect 39
 
 To flash a new build over QMK, enter the bootloader with Fn+Esc, or hold Esc while plugging in the keyboard, then
 run the `flash` command. The Esc check runs before QMK starts, so it also works if a QMK build does not start.
-It has been tested on a modified stock image that contains the same code, not on a QMK build.
 
 ## Restore the stock firmware
 

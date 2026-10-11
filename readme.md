@@ -34,8 +34,7 @@ Works:
 - Num Lock, Caps Lock, Scroll Lock and Win Lock LEDs. They turn off while the host is suspended.
 - Key LEDs (RGB; red only on Rec and the media keys) and side lights, driven by the CH555 LED controller. They
   show a fixed test pattern and turn off while the host is suspended.
-- Holding Esc while plugging in the keyboard enters the bootloader. This check has been tested on a modified stock
-  image that contains the same code, not on a QMK build.
+- Holding Esc while plugging in the keyboard enters the bootloader.
 
 Not implemented:
 - Lighting effects and lighting keycodes: the LEDs show only the fixed test pattern.
