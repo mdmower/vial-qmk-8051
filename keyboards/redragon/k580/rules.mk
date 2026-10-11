@@ -40,3 +40,11 @@ RAW_ENABLE = yes
 
 #DIGITIZER_ENABLE = no #absolute mouse
 #CONSOLE_ENABLE = no
+
+# Evision OEM bootloader (0c45:7687), which the K580 ships with: QK_BOOT erases its boot marker page
+# (0x27C0) and resets. Link with --code-loc 0x3027, then make the flash image with
+# util/evision_oem_image.py.
+EVISION_OEM_BOOTLOADER ?= no
+ifeq ($(strip $(EVISION_OEM_BOOTLOADER)), yes)
+    OPT_DEFS += -DEVISION_OEM_BOOTLOADER
+endif
