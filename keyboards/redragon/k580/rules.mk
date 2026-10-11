@@ -1,4 +1,4 @@
-ENCODER_ENABLE = no
+ENCODER_ENABLE = yes
 
 #CUSTOM_MATRIX = lite  # matrix_scan_raw() in keyboards/redragon/k580/matrix.c reads LED ISR shadow buffer
 #RGB_MATRIX_ENABLE = yes
