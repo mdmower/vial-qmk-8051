@@ -47,5 +47,5 @@
 #define LED_CAPS_LOCK_PIN PORT5_2
 #define LED_SCROLL_LOCK_PIN PORT5_1
 #define LED_PIN_ON_STATE 1
-/* PORT5_0 = Win Lock LED — pin defined for future use, logic not implemented yet */
+/* Win Lock LED (Fn+Win in the default keymap) */
 #define LED_WIN_LOCK_PIN PORT5_0

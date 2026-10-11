@@ -1,13 +1,14 @@
 #include QMK_KEYBOARD_H
 
-// Macro Keys (for default keymap)
+// Custom keycodes: macro keys G1-G5 and Rec (no function yet), Win Lock
 enum {
   U_G1 = SAFE_RANGE,
   U_G2,
   U_G3,
   U_G4,
   U_G5,
-  U_REC
+  U_REC,
+  U_WINLK
 };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -21,13 +22,13 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_LSFT,  KC_Z,     KC_X,    	KC_C,    	KC_V,    	KC_B,    	KC_N,    	KC_M,    	KC_COMM,  KC_DOT,  	KC_SLSH,             	        KC_RSFT,  KC_UP,    KC_P4,      KC_P5,   KC_P6,
         KC_LCTL,  KC_LGUI,  KC_LALT, 	KC_SPC,  	KC_RALT, 	MO(1),   	KC_APP,   	KC_RCTL,  KC_LEFT,  KC_DOWN,  KC_RIGHT, KC_P0, 	  KC_PDOT, 	KC_P1,  	KC_P2,    KC_P3,      KC_PENT,
         /* row 6 — G1-G5, Rec, media keys */                        U_G1,     U_G2,     U_G3,      U_G4,    U_G5,     U_REC,    KC_MUTE,  KC_MPRV, KC_MPLY, KC_MNXT),
-	[1] = LAYOUT_default( /* Fn layer: Fn+Esc = bootloader */
+	[1] = LAYOUT_default( /* Fn layer: Fn+Esc = bootloader, Fn+Win = Win Lock */
         QK_BOOT, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
+        _______, U_WINLK, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______),
 };
 /*
@@ -67,8 +68,20 @@ void macro_led_clear(void) {
 */
 // Macro support (for default keymap)
 
+/* Win Lock: while it is on, LGUI/RGUI are blocked and the Win Lock LED is lit. */
+static bool win_lock = false;
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
+    case U_WINLK:
+        if (record->event.pressed) {
+            win_lock = !win_lock;
+            writePin(LED_WIN_LOCK_PIN, win_lock);
+        }
+        return false;
+    case KC_LGUI:
+    case KC_RGUI:
+        return !win_lock;
     /*
     case U_G1:
         if (record->event.pressed) {
@@ -115,6 +128,8 @@ void keyboard_post_init_user(void) {
     /* P5.4 enables the indicator LEDs, active low (stock 1.04 @0xdc4b) */
     setPinOutput(PORT5_4);
     writePinLow(PORT5_4);
+    setPinOutput(LED_WIN_LOCK_PIN);
+    writePinLow(LED_WIN_LOCK_PIN);
 }
 void housekeeping_task_user(void) {}
 
