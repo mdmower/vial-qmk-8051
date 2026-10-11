@@ -22,8 +22,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_CAPS,  KC_A,   	KC_S,    	KC_D,    	KC_F,    	KC_G,    	KC_H,    	KC_J,    	KC_K,     KC_L,    	KC_SCLN,  KC_QUOT, 	          KC_ENT,   KC_P7,    KC_P8,      KC_P9,   KC_PPLS,
         KC_LSFT,  KC_Z,     KC_X,    	KC_C,    	KC_V,    	KC_B,    	KC_N,    	KC_M,    	KC_COMM,  KC_DOT,  	KC_SLSH,             	        KC_RSFT,  KC_UP,    KC_P4,      KC_P5,   KC_P6,
         KC_LCTL,  KC_LGUI,  KC_LALT, 	KC_SPC,  	KC_RALT, 	KC_RGUI, 	MO(0),   	KC_RCTL,  KC_LEFT,  KC_DOWN,  KC_RIGHT, KC_P0, 	  KC_PDOT, 	KC_P1,  	KC_P2,    KC_P3,      KC_PENT,
-        /* row 6 — macro keys */                                    U_G1,     U_G2,     U_G3,      U_G4,    U_G5,     U_REC,
-        /* row 7 — media keys */                                                                                                U_VOLBRI, KC_MPRV, KC_MPLY, KC_MNXT),
+        /* row 6 — G1-G5, Rec, media keys */                        U_G1,     U_G2,     U_G3,      U_G4,    U_G5,     U_REC,    U_VOLBRI, KC_MPRV, KC_MPLY, KC_MNXT),
 };
 /*
 /* Macro LED support
