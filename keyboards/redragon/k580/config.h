@@ -40,9 +40,9 @@
 #define USB_MAX_POWER_CONSUMPTION 100
 
 /* RGB Matrix */
-#define RGB_MATRIX_LED_COUNT 104        /* 104 key LEDs; DMA buffer is 18×8=144 slots internally */
-#define RGB_MATRIX_MAXIMUM_BRIGHTNESS 200
-#define RGB_MATRIX_DEFAULT_VAL RGB_MATRIX_MAXIMUM_BRIGHTNESS
+//#define RGB_MATRIX_LED_COUNT 104 /* 104 physical keys; DMA buffer is 18×6=108 internally */
+//#define RGB_MATRIX_MAXIMUM_BRIGHTNESS 200
+//#define RGB_MATRIX_DEFAULT_VAL RGB_MATRIX_MAXIMUM_BRIGHTNESS
 
 /* Indicator LEDs — active high (LED on when pin is driven high) */
 #define LED_NUM_LOCK_PIN PORT5_3
