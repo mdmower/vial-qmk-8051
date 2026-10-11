@@ -29,9 +29,41 @@
  * self-reset (bSW_RESET) and the keyboard reboots into normal firmware.
  * Nothing is lost because the firmware flash is only written atomically
  * at the end of the ISP session.
+ *
+ * With EVISION_OEM_BOOTLOADER defined, it instead erases the Evision OEM
+ * bootloader's boot marker and resets (see below). That bootloader has no
+ * timeout: the board stays in it, across replugs, until a flash completes.
+ * If the erase fails, the reset starts the app again.
  */
 void bootloader_jump(void) {
-#if BOOT_LOAD_ADDR == 0x3800
+#if defined(EVISION_OEM_BOOTLOADER)
+    /*
+     * Evision OEM bootloader (0c45:7687, app at 0x2800): it starts the app only while the
+     * marker AA 55 33 CC at 0x27C0 is present. Erase that 64-byte page and reset, as the
+     * Redragon K580 stock firmware does for its "04 EE EE" command. The bootloader rewrites
+     * the marker after a successful flash. Nothing else below 0x2800 is written.
+     */
+    USB_CTRL = 0;
+    EA = 0; // Disabling all interrupts is required.
+    wait_us(50000);
+    wait_us(50000);
+
+    SAFE_MOD = 0x55;
+    SAFE_MOD = 0xAA;
+    GLOBAL_CFG |= bCODE_WE;
+    ROM_ADDR_H = 0x27;
+    ROM_ADDR_L = 0xC0;
+    ROM_DATA_HH = 0x80;
+    ROM_DATA_HL = 0x00;
+    if (ROM_CTRL & bROM_ADDR_OK) {
+        ROM_CTRL = ROM_CMD_ERASE;
+    }
+    SAFE_MOD = 0x55;
+    SAFE_MOD = 0xAA;
+    GLOBAL_CFG &= ~bCODE_WE;
+
+    mcu_reset();
+#elif BOOT_LOAD_ADDR == 0x3800
     USB_CTRL = 0;
     EA = 0; // Disabling all interrupts is required.
     TMOD = 0;
