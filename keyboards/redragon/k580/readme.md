@@ -103,7 +103,7 @@ On the tested keyboard, a restore of firmware 1.04 gave a full 64 KB read-back i
 - Layer 0: the printed layout. Media keys: previous, play/pause, next. Roller: volume; roller press: Mute.
 - Layer 1 (Fn): Fn+Esc enters the bootloader (`QK_BOOT`). Fn+Win toggles Win Lock, which blocks both Win keys and
   lights the Win Lock LED. Win Lock is off after power-up.
-- G1–G5 and Rec: custom keycodes `U_G1`…`U_REC` with no function.
+- G1–G5 and Rec: F13–F17 and F18, for shortcuts set in the operating system.
 
 ## Hardware
 

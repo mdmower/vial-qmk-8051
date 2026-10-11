@@ -1,14 +1,8 @@
 #include QMK_KEYBOARD_H
 
-// Custom keycodes: macro keys G1-G5 and Rec (no function yet), Win Lock
+// Custom keycode: Win Lock
 enum {
-  U_G1 = SAFE_RANGE,
-  U_G2,
-  U_G3,
-  U_G4,
-  U_G5,
-  U_REC,
-  U_WINLK
+  U_WINLK = SAFE_RANGE
 };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -21,7 +15,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_CAPS,  KC_A,   	KC_S,    	KC_D,    	KC_F,    	KC_G,    	KC_H,    	KC_J,    	KC_K,     KC_L,    	KC_SCLN,  KC_QUOT, 	          KC_ENT,   KC_P7,    KC_P8,      KC_P9,   KC_PPLS,
         KC_LSFT,  KC_Z,     KC_X,    	KC_C,    	KC_V,    	KC_B,    	KC_N,    	KC_M,    	KC_COMM,  KC_DOT,  	KC_SLSH,             	        KC_RSFT,  KC_UP,    KC_P4,      KC_P5,   KC_P6,
         KC_LCTL,  KC_LGUI,  KC_LALT, 	KC_SPC,  	KC_RALT, 	MO(1),   	KC_APP,   	KC_RCTL,  KC_LEFT,  KC_DOWN,  KC_RIGHT, KC_P0, 	  KC_PDOT, 	KC_P1,  	KC_P2,    KC_P3,      KC_PENT,
-        /* row 6 — G1-G5, Rec, media keys */                        U_G1,     U_G2,     U_G3,      U_G4,    U_G5,     U_REC,    KC_MUTE,  KC_MPRV, KC_MPLY, KC_MNXT),
+        /* row 6 — G1-G5 and Rec send F13-F18 (bind them in the OS), media keys */
+                                                                    KC_F13,   KC_F14,   KC_F15,    KC_F16,  KC_F17,   KC_F18,   KC_MUTE,  KC_MPRV, KC_MPLY, KC_MNXT),
 	[1] = LAYOUT_default( /* Fn layer: Fn+Esc = bootloader, Fn+Win = Win Lock */
         QK_BOOT, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
@@ -31,42 +26,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______, U_WINLK, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______),
 };
-/*
-/* Macro LED support
-                    {G1, G2, G3, G4, G5, REC} */
-//int macro_state[] = {0,  0,  0,  0,  0,  0  };
-
-// Map Macro state to RGB channels of LED indices 77 and 78
-/*
-void set_macro_leds(int state[]) {
-    rgb_matrix_set_color(118, state[2]*255, state[1]*255, state[0]*255);
-    rgb_matrix_set_color(119, state[5]*255, state[4]*255, state[3]*255);
-}
-
-void macro_led_toggle(int i) {
-    macro_state[i] = 1-macro_state[i];
-    set_macro_leds(macro_state);
-}
-
-void macro_led_on(int i) {
-    macro_state[i] = 1;
-    set_macro_leds(macro_state);
-}
-
-void macro_led_off(int i) {
-    macro_state[i] = 0;
-    set_macro_leds(macro_state);
-}
-
-void macro_led_clear(void) {
-    for (int i = 0; i < 6; i++){
-        macro_state[i] = 0;
-    }
-    set_macro_leds(macro_state);
-}
-
-*/
-// Macro support (for default keymap)
 
 /* Win Lock: while it is on, LGUI/RGUI are blocked and the Win Lock LED is lit. */
 static bool win_lock = false;
@@ -82,37 +41,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     case KC_LGUI:
     case KC_RGUI:
         return !win_lock;
-    /*
-    case U_G1:
-        if (record->event.pressed) {
-            macro_led_toggle(0);
-        }
-        break;
-    case U_G2:
-        if (record->event.pressed) {
-            macro_led_toggle(1);
-        }
-        break;
-    case U_G3:
-        if (record->event.pressed) {
-            macro_led_toggle(2);
-        }
-        break;
-    case U_G4:
-        if (record->event.pressed) {
-            macro_led_toggle(3);
-        }
-        break;
-    case U_G5:
-        if (record->event.pressed) {
-            macro_led_toggle(4);
-        }
-        break;
-    case U_REC:
-        if (record->event.pressed) {
-            macro_led_toggle(5);
-        }
-        break;*/
     }
     return true;
 }

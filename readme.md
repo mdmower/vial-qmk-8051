@@ -30,13 +30,13 @@ Works:
 - All keys of the main block, the navigation cluster and the numpad; NKRO.
 - Fn layer: Fn+Esc enters the bootloader, Fn+Win toggles Win Lock.
 - Media keys, the volume roller and its press (Mute).
+- G1–G5 and Rec send F13–F18, for shortcuts set in the operating system.
 - Num Lock, Caps Lock, Scroll Lock and Win Lock LEDs. They turn off while the host is suspended.
 - Holding Esc while plugging in the keyboard enters the bootloader. This check has been tested on a modified stock
   image that contains the same code, not on a QMK build.
 
 Not implemented:
 - Per-key RGB lighting and the red LEDs of the media keys. They stay off.
-- The G1–G5 and Rec keys. They send nothing.
 - USB serial number.
 - Saved settings: the EEPROM driver keeps its data in RAM, so changes made at runtime are lost at power-off.
 - Vial: it did not work in the original port, and this branch has no Vial keymap.
