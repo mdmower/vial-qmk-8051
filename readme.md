@@ -46,12 +46,12 @@ Works:
 
 Not implemented:
 - USB serial number.
-- Saved settings: the EEPROM driver and the lighting settings keep their data in RAM, so changes made at
-  runtime are lost at power-off.
+- Saved settings: the lighting settings are kept in RAM, so changes made at runtime are lost at power-off.
+  QMK's EEPROM is a driver that stores nothing.
 - Vial: it did not work in the original port, and this branch has no Vial keymap.
 
 Other limits:
-- About 1.1 KB of the application region (0x2800–0xEFBF, 51,136 bytes) is free.
+- About 16.8 KB of the application region (0x2800–0xEFBF, 51,136 bytes) is free.
 - QMK enumerates as a USB hub (`3938:1195`) with three devices: boot keyboard, media keys and NKRO keyboard.
 - The backup and flash tools (`util/k580_dump.py`, `util/evision_flash.py`) run on Linux only.
 - Other K580 revisions may use a different MCU; one keyboard database lists the K580 with a Sonix SN32F248B.

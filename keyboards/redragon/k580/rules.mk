@@ -11,7 +11,7 @@ ENCODER_MAP_ENABLE = yes
 
 
 CAPS_WORD_ENABLE = no
-#GRAVE_ESC_ENABLE = no
+GRAVE_ESC_ENABLE = no # flash space: QK_GESC does nothing
 MAGIC_ENABLE = no  #swap thingy
 COMMAND_ENABLE = no #the old magic
 DYNAMIC_MACRO_ENABLE = no
@@ -29,8 +29,13 @@ QMK_SETTINGS = no
 
 
 
-EEPROM_DRIVER = transient
-#EEPROM_DRIVER = wear_leveling
+# No EEPROM (eeprom_none.c), for flash space: QMK's eeconfig reads zeros and its writes are dropped.
+# Nothing here reads eeconfig back (no bootmagic, no magic keycodes); a feature that keeps its
+# settings in eeconfig would get zeros. The transient driver held eeconfig in RAM only.
+EEPROM_DRIVER = custom
+SRC += eeprom_none.c
+# Here, not in config.h: drivers/eeprom/eeprom_driver.c does not include config.h.
+OPT_DEFS += -DEEPROM_SIZE=127
 
 
 EXTRAKEY_ENABLE = yes
@@ -50,3 +55,13 @@ EVISION_OEM_BOOTLOADER ?= no
 ifeq ($(strip $(EVISION_OEM_BOOTLOADER)), yes)
     OPT_DEFS += -DEVISION_OEM_BOOTLOADER
 endif
+
+# Disabled for flash space (2026-10-12; image end 0xEB34 before). Remove a line to use the feature again.
+# - Tap keys (LT, MT, TT, *_T, tap-toggle) and one-shot keys (OSM, OSL) do nothing; MO() still works.
+#   In OPT_DEFS, not config.h: they change keyrecord_t, and some files do not include config.h.
+OPT_DEFS += -DNO_ACTION_TAPPING -DNO_ACTION_ONESHOT
+# - No send_string() / SEND_STRING() (macros, QK_MAKE).
+SEND_STRING_ENABLE = no
+# - keycode_config() and mod_config() return their argument: the swap settings of magic keycodes and
+#   bootmagic are ignored. Remove before enabling either.
+OPT_DEFS += -DKEYCODE_CONFIG_IDENTITY

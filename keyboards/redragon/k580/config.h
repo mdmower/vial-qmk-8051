@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #pragma once
-#define EEPROM_SIZE 127
 /* Matrix config */
 
 #define MATRIX_ROWS 7  // Keypu 0 - 6
