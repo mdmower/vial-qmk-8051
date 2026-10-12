@@ -12,6 +12,7 @@ static __code const uint8_t com_select[LED_DMA_COMS] = {
 __xdata __at(LED_DMA_BUF_ADDR) uint8_t led_dma_buf[LED_DMA_COMS * LED_DMA_GROUPS * 4];
 volatile __xdata uint8_t led_dma_keys[LED_DMA_COMS];
 volatile __bit           led_dma_frame;
+volatile __data uint8_t  led_dma_frames;
 static __data uint8_t    led_com;
 /* LED data for the COMs while the LEDs are off: all zero */
 static __xdata __at(LED_DMA_BUF_ADDR + sizeof(led_dma_buf)) uint8_t led_dma_off[LED_DMA_GROUPS * 4];
@@ -146,43 +147,21 @@ void led_dma_isr(void) __interrupt(INT_NO_PWM_I2C) {
     led_dma_keys[com] = ~rows;
     if (com == LED_DMA_COMS - 1) {
         led_dma_frame = 1;
+        led_dma_frames++;
     }
     led_com = com + 1;
 }
 
-/*
- * Test pattern: key rows 0 and 3 light buffer byte 1, rows 1 and 4 byte 2, rows 2 and 5 byte 3;
- * row 6 (G1-G5, Rec, media keys) and group 7 (side lights) light bytes 1-3.
- */
-static void led_dma_test_pattern(void) {
-    __xdata uint8_t *p = led_dma_buf;
-    uint8_t          c, n;
-
-    for (c = 0; c < LED_DMA_COMS; c++) {
-        for (n = 0; n < LED_DMA_GROUPS; n++) {
-            p[0] = 0xFF;
-            if (n < 6) {
-                p[1]         = 0;
-                p[2]         = 0;
-                p[3]         = 0;
-                p[1 + n % 3] = 0x40;
-            } else {
-                p[1] = 0x40;
-                p[2] = 0x40;
-                p[3] = 0x40;
-            }
-            p += 4;
-        }
-    }
-}
-
 /* Stock 1.04 @0x9ecf */
 void led_dma_init(void) {
-    uint8_t c;
+    uint16_t i;
 
-    led_dma_test_pattern();
-    for (c = 0; c < sizeof(led_dma_off); c++) {
-        led_dma_off[c] = 0;
+    /* Intensity 0xFF (as stock), colours 0; led_fx.c writes the colours */
+    for (i = 0; i < sizeof(led_dma_buf); i++) {
+        led_dma_buf[i] = (i & 3) ? 0 : 0xFF;
+    }
+    for (i = 0; i < sizeof(led_dma_off); i++) {
+        led_dma_off[i] = 0;
     }
     led_com       = 0;
     led_dma_frame = 0;

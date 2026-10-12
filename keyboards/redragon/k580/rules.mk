@@ -3,7 +3,7 @@ ENCODER_ENABLE = yes
 # The CH555 LED controller drives the matrix columns (its COM pins), so its interrupt
 # (led_dma.c) reads the key rows and matrix.c takes them from there.
 CUSTOM_MATRIX = lite
-SRC += led_dma.c matrix.c
+SRC += led_dma.c led_fx.c matrix.c
 OPT_DEFS += -DCH555_LED_DMA_ENABLE
 ENCODER_MAP_ENABLE = yes
 

@@ -103,8 +103,22 @@ On the tested keyboard, a restore of firmware 1.04 gave a full 64 KB read-back i
 - Layer 1 (Fn): Fn+Esc enters the bootloader (`QK_BOOT`). Fn+Win toggles Win Lock, which blocks both Win keys and
   lights the Win Lock LED. Win Lock is off after power-up.
 - G1–G5 and Rec: F13–F17 and F18, for shortcuts set in the operating system.
-- LEDs: a fixed test pattern. The Esc and Caps Lock rows red, the number and Shift rows green, the Tab and Ctrl
-  rows blue (by matrix row, so the numpad differs); G1–G5 and the side lights white; Rec and the media keys red.
+- Lighting ([led_fx.c](led_fx.c)): two zones with separate settings, the keys and the side lights. Fn plus the
+  keys below steps a setting; with Shift held it steps back. The settings return to the defaults at power-off.
+
+  | Setting | Keys | Side lights |
+  |---|---|---|
+  | Mode | Fn+Ins | Fn+G1 |
+  | Hue (24 steps) | Fn+Home | Fn+G2 |
+  | Saturation (5 steps; the lowest is white) | Fn+PgUp | Fn+G3 |
+  | Brightness (8 steps) | Fn+Del | Fn+G4 |
+  | Speed (5 steps) | Fn+End | Fn+G5 |
+  | On/off | Fn+PgDn | Fn+Rec |
+
+  Modes: static colour, rainbow, reversed rainbow, wave, reversed wave, colour cycle, breathing. The rainbow
+  runs from left to right on the keys and from back to front on the side lights; the wave moves the same way
+  (the reversed modes run the other way). G1–G5, Rec and the media keys have one colour each and light at the
+  zone's brightness whatever the hue. Defaults: wave on the keys, rainbow on the side lights.
 
 ## Hardware
 
@@ -113,5 +127,6 @@ On the tested keyboard, a restore of firmware 1.04 gave a full 64 KB read-back i
   Caps Lock, Scroll Lock, Win Lock LEDs (high = on).
 - Key LEDs and side lights: the CH555 LED controller, with red, green and blue rows on P4, P2 and P1 and common
   lines on P0, P3 and P7, shared with the key matrix. LED row n on common line c is the LED of the key in matrix
-  row n, column c (rows 0–6); LED row 7 on common lines 0–15 drives the side lights. The keys are read in the
-  LED controller's interrupt, on each common line ([led_dma.c](led_dma.c)).
+  row n, column c (rows 0–6); LED row 7 on common lines 0–15 drives the side lights. G1–G5 (white), Rec and
+  the media keys (red) have one LED each, on the red row. The keys are read in the LED controller's interrupt,
+  on each common line ([led_dma.c](led_dma.c)).

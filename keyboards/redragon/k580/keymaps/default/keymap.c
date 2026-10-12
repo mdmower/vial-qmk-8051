@@ -1,9 +1,12 @@
 #include QMK_KEYBOARD_H
 #include "led_dma.h"
+#include "led_fx.h"
 
-// Custom keycode: Win Lock
+// Custom keycodes: Win Lock; lighting settings, keys then side lights in led_fx.h order
 enum {
-  U_WINLK = SAFE_RANGE
+  U_WINLK = SAFE_RANGE,
+  U_KMODE, U_KHUE, U_KSAT, U_KVAL, U_KSPD, U_KTOG,
+  U_SMODE, U_SHUE, U_SSAT, U_SVAL, U_SSPD, U_STOG
 };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -18,20 +21,29 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_LCTL,  KC_LGUI,  KC_LALT, 	KC_SPC,  	KC_RALT, 	MO(1),   	KC_APP,   	KC_RCTL,  KC_LEFT,  KC_DOWN,  KC_RIGHT, KC_P0, 	  KC_PDOT, 	KC_P1,  	KC_P2,    KC_P3,      KC_PENT,
         /* row 6 — G1-G5 and Rec send F13-F18 (bind them in the OS), media keys */
                                                                     KC_F13,   KC_F14,   KC_F15,    KC_F16,  KC_F17,   KC_F18,   KC_MUTE,  KC_MPRV, KC_MPLY, KC_MNXT),
-	[1] = LAYOUT_default( /* Fn layer: Fn+Esc = bootloader, Fn+Win = Win Lock */
+	/* Fn layer: Fn+Esc = bootloader, Fn+Win = Win Lock. Lighting (Shift reverses): Ins/G1 mode, Home/G2
+	 * hue, PgUp/G3 saturation, Del/G4 brightness, End/G5 speed, PgDn/Rec on/off; Ins-PgDn for the
+	 * keys, G1-Rec for the side lights. */
+	[1] = LAYOUT_default(
         QK_BOOT, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
+        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, U_KMODE, U_KHUE,  U_KSAT,  _______,
+        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, U_KVAL,  U_KSPD,  U_KTOG,  _______,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
         _______, U_WINLK, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
-        _______, _______, _______, _______, _______, _______, _______, _______, _______, _______),
+        U_SMODE, U_SHUE,  U_SSAT,  U_SVAL,  U_SSPD,  U_STOG,  _______, _______, _______, _______),
 };
 
 /* Win Lock: while it is on, LGUI/RGUI are blocked and the Win Lock LED is lit. */
 static bool win_lock = false;
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    if (keycode >= U_KMODE && keycode <= U_STOG) {
+        if (record->event.pressed) {
+            led_fx_adjust(keycode - U_KMODE, get_mods() & MOD_MASK_SHIFT);
+        }
+        return false;
+    }
     switch (keycode) {
     case U_WINLK:
         if (record->event.pressed) {
@@ -69,7 +81,9 @@ void suspend_wakeup_init_user(void) {
     writePinLow(PORT5_4);
     led_dma_output(true);
 }
-void housekeeping_task_user(void) {}
+void housekeeping_task_user(void) {
+    led_fx_task();
+}
 
 bool pre_process_record_user(uint16_t keycode, keyrecord_t *record) { return true; }
 void post_process_record_user(uint16_t keycode, keyrecord_t *record) {}
