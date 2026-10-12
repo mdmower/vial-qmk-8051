@@ -29,7 +29,8 @@ have not been tested.
 Works:
 - All keys of the main block, the navigation cluster and the numpad; NKRO.
 - Fn layer: Fn+Esc enters the bootloader, Fn+Win toggles Win Lock.
-- Media keys, the volume roller and its press (Mute).
+- Media keys and the volume roller. The roller toggle key switches the roller between volume and key LED
+  brightness.
 - G1–G5 and Rec send F13–F18, for shortcuts set in the operating system.
 - Num Lock, Caps Lock, Scroll Lock and Win Lock LEDs. They turn off while the host is suspended.
 - Key LEDs (RGB; one colour on G1–G5, Rec and the media keys) and side lights, driven by the CH555 LED

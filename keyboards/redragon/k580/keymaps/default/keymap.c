@@ -2,9 +2,10 @@
 #include "led_dma.h"
 #include "led_fx.h"
 
-// Custom keycodes: Win Lock; lighting settings, keys then side lights in led_fx.h order
+// Custom keycodes: Win Lock; roller toggle key and roller turns; lighting settings, keys then side lights in led_fx.h order
 enum {
   U_WINLK = SAFE_RANGE,
+  U_ROLL, U_RLDN, U_RLUP,
   U_KMODE, U_KHUE, U_KSAT, U_KVAL, U_KSPD, U_KTOG,
   U_SMODE, U_SHUE, U_SSAT, U_SVAL, U_SSPD, U_STOG
 };
@@ -19,8 +20,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_CAPS,  KC_A,   	KC_S,    	KC_D,    	KC_F,    	KC_G,    	KC_H,    	KC_J,    	KC_K,     KC_L,    	KC_SCLN,  KC_QUOT, 	          KC_ENT,   KC_P7,    KC_P8,      KC_P9,   KC_PPLS,
         KC_LSFT,  KC_Z,     KC_X,    	KC_C,    	KC_V,    	KC_B,    	KC_N,    	KC_M,    	KC_COMM,  KC_DOT,  	KC_SLSH,             	        KC_RSFT,  KC_UP,    KC_P4,      KC_P5,   KC_P6,
         KC_LCTL,  KC_LGUI,  KC_LALT, 	KC_SPC,  	KC_RALT, 	MO(1),   	KC_APP,   	KC_RCTL,  KC_LEFT,  KC_DOWN,  KC_RIGHT, KC_P0, 	  KC_PDOT, 	KC_P1,  	KC_P2,    KC_P3,      KC_PENT,
-        /* row 6 — G1-G5 and Rec send F13-F18 (bind them in the OS), media keys */
-                                                                    KC_F13,   KC_F14,   KC_F15,    KC_F16,  KC_F17,   KC_F18,   KC_MUTE,  KC_MPRV, KC_MPLY, KC_MNXT),
+        /* row 6 — G1-G5 and Rec send F13-F18 (bind them in the OS), roller toggle, media keys */
+                                                                    KC_F13,   KC_F14,   KC_F15,    KC_F16,  KC_F17,   KC_F18,   U_ROLL,   KC_MPRV, KC_MPLY, KC_MNXT),
 	/* Fn layer: Fn+Esc = bootloader, Fn+Win = Win Lock. Lighting (Shift reverses): Ins/G1 mode, Home/G2
 	 * hue, PgUp/G3 saturation, Del/G4 brightness, End/G5 speed, PgDn/Rec on/off; Ins-PgDn for the
 	 * keys, G1-Rec for the side lights. */
@@ -36,6 +37,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 /* Win Lock: while it is on, LGUI/RGUI are blocked and the Win Lock LED is lit. */
 static bool win_lock = false;
+/* The roller toggle key switches the roller between volume and key LED brightness. */
+static bool roller_light = false;
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if (keycode >= U_KMODE && keycode <= U_STOG) {
@@ -45,6 +48,23 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         return false;
     }
     switch (keycode) {
+    case U_ROLL:
+        if (record->event.pressed) {
+            roller_light = !roller_light;
+        }
+        return false;
+    case U_RLDN:
+    case U_RLUP:
+        if (roller_light) {
+            if (record->event.pressed) {
+                led_fx_adjust(LED_FX_VAL, keycode == U_RLDN);
+            }
+        } else if (record->event.pressed) {
+            register_code(keycode == U_RLDN ? KC_VOLD : KC_VOLU);
+        } else {
+            unregister_code(keycode == U_RLDN ? KC_VOLD : KC_VOLU);
+        }
+        return false;
     case U_WINLK:
         if (record->event.pressed) {
             win_lock = !win_lock;
@@ -60,7 +80,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 #ifdef ENCODER_MAP_ENABLE
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
-    [0] = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU) },
+    [0] = { ENCODER_CCW_CW(U_RLDN, U_RLUP) }, // volume or key LED brightness (U_ROLL)
     [1] = { ENCODER_CCW_CW(_______, _______) },
 };
 #endif
