@@ -256,7 +256,7 @@ def do_status(a):
             s = usb_strings(devpath)
             print("%-15s %04x:%04x  %s  iface1=%s  bcdDevice=%s  %r / %r"
                   % (label, vid, pid, node, i1, s["bcdDevice"], s["manufacturer"], s["product"]))
-    for d in usb_devices(QMK_VID, QMK_PID):     # QMK: a hub plus devices D0-D2, all with this VID:PID
+    for d in usb_devices(QMK_VID, QMK_PID):     # QMK: one device (a hub plus devices D0-D2 before 7de3419d54)
         s = usb_attrs(d)
         print("%-15s %04x:%04x  %s  bcdDevice=%s  %r / %r"
               % ("QMK", QMK_VID, QMK_PID, os.path.basename(d), s["bcdDevice"], s["manufacturer"], s["product"]))
