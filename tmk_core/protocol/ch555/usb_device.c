@@ -245,9 +245,6 @@ USB_DevIntNext:
 					D0_EP0RES = UEP_R_RES_ACK | UEP_T_RES_NAK;
 					break;
 
-				case USB_SET_FEATURE:
-					break;
-
 				default:
 					/* The status phase is completed and interrupted or the 0-length data packet is forced to be uploaded to end the control transmission. */
 					D0_EP0T_L = 0;  
@@ -648,7 +645,9 @@ USB_DevIntNext:
 								break;			
 																
 							case USB_SET_FEATURE:
-								if( ( pD0_SETUP_REQ->bRequestType & USB_REQ_RECIP_MASK ) == USB_REQ_RECIP_ENDP ) 
+								/* USB 2.0 9.4.9: ENDPOINT_HALT (0) for an endpoint, DEVICE_REMOTE_WAKEUP (1) for the device;
+								 * other selectors are not supported (TEST_MODE is for high-speed devices, USB 2.0 7.1.20) */
+								if( ( pD0_SETUP_REQ->bRequestType & USB_REQ_RECIP_MASK ) == USB_REQ_RECIP_ENDP && pD0_SETUP_REQ->wValueL == 0 ) 
 								{  
 									/* endpoint */
 									switch( pD0_SETUP_REQ->wIndexL ) 
@@ -713,13 +712,10 @@ USB_DevIntNext:
 											break;
 									}
 								}
-								else if( ( pD0_SETUP_REQ->bRequestType & USB_REQ_RECIP_MASK ) == USB_REQ_RECIP_DEVICE )
+								else if( ( pD0_SETUP_REQ->bRequestType & USB_REQ_RECIP_MASK ) == USB_REQ_RECIP_DEVICE && pD0_SETUP_REQ->wValueL == 1 )
 								{
-									if( pD0_SETUP_REQ->wValueL == 1 )
-									{ 
-										/* Set sleep */
-										USB_SleepStatus |= 0x01; 
-									}		
+									/* remote wakeup enabled */
+									USB_SleepStatus |= 0x01;
 								}
 								else
 								{
@@ -731,7 +727,8 @@ USB_DevIntNext:
 								break;
 								
 							case USB_CLEAR_FEATURE:
-								if( ( pD0_SETUP_REQ->bRequestType & USB_REQ_RECIP_MASK ) == USB_REQ_RECIP_ENDP ) 
+								/* the same selectors as SET_FEATURE */
+								if( ( pD0_SETUP_REQ->bRequestType & USB_REQ_RECIP_MASK ) == USB_REQ_RECIP_ENDP && pD0_SETUP_REQ->wValueL == 0 ) 
 								{  
 									/* endpoint */
 									switch( pD0_SETUP_REQ->wIndexL ) 
@@ -795,12 +792,10 @@ USB_DevIntNext:
 											break;
 									}
 								}
-								else if( ( pD0_SETUP_REQ->bRequestType & USB_REQ_RECIP_MASK ) == USB_REQ_RECIP_DEVICE )
+								else if( ( pD0_SETUP_REQ->bRequestType & USB_REQ_RECIP_MASK ) == USB_REQ_RECIP_DEVICE && pD0_SETUP_REQ->wValueL == 1 )
 								{
-									if( pD0_SETUP_REQ->wValueL == 1 )
-									{ 
-										USB_SleepStatus &= ~0x01;                      
-									}
+									/* remote wakeup disabled */
+									USB_SleepStatus &= ~0x01;
 								}
 								else
 								{
@@ -817,12 +812,18 @@ USB_DevIntNext:
 								break;
 								
 							case USB_GET_STATUS: 
+								/* USB 2.0 9.4.5: an interface or endpoint that does not exist is a Request Error.
+								 * pD0_EP0_BUF is also the SETUP packet: byte 0 (bRequestType) is written only after the recipient test. */
 								if( ( pD0_SETUP_REQ->bRequestType & USB_REQ_RECIP_MASK ) == USB_REQ_RECIP_ENDP ) 
 								{  
 									/* endpoint */
 									pD0_EP0_BUF[ 0 ] = 0x00;
 									switch( pD0_SETUP_REQ->wIndexL ) 
 									{
+										case 0x00:
+										case 0x80:
+											break;
+
 #ifdef USE_D0_EP6_IN
 										case 0x86:                                       
 											if( ( D0_EP6RES & MASK_UEP_X_RES ) == UEP_X_RES_STALL )
@@ -892,28 +893,46 @@ USB_DevIntNext:
 											}
 											break;                                
 #endif
+
+										default:
+											/* Unsupported endpoint */
+											len = 0xFFFF;
+											break;
 										}
 								}
 								else if( ( pD0_SETUP_REQ->bRequestType & USB_REQ_RECIP_MASK ) == USB_REQ_RECIP_DEVICE )
 								{
+									/* bit 1: remote wakeup enabled (bit 0 of USB_SleepStatus; its bit 1 is the bus suspend) */
 									pD0_EP0_BUF[ 0 ] = 0x00;
-									if( USB_SleepStatus )
+									if( USB_SleepStatus & 0x01 )
 									{
 										pD0_EP0_BUF[ 0 ] = 0x02;
 									}
-									else
-									{
-										pD0_EP0_BUF[0] = 0x00;
-									}
-								}																	
-								pD0_EP0_BUF[ 1 ] = 0;
-								if( D0SetupLen >= 2 ) 
-								{
-									len = 2;
 								}
-								else 
+								else if( ( pD0_SETUP_REQ->bRequestType & USB_REQ_RECIP_MASK ) == USB_REQ_RECIP_INTERF )
 								{
-									len = D0SetupLen;
+									/* interface status: 0 */
+									pD0_EP0_BUF[ 0 ] = 0x00;
+									if( pD0_SETUP_REQ->wIndexL >= TOTAL_INTERFACES )
+									{
+										len = 0xFFFF;
+									}
+								}
+								else
+								{
+									len = 0xFFFF;
+								}
+								if( len != 0xFFFF )
+								{
+									pD0_EP0_BUF[ 1 ] = 0;
+									if( D0SetupLen >= 2 ) 
+									{
+										len = 2;
+									}
+									else 
+									{
+										len = D0SetupLen;
+									}
 								}
 								break;
 								
