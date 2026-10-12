@@ -904,68 +904,60 @@ USB_DevIntNext:
 								break;
 						}
 					}
-					else if( ( pD0_SETUP_REQ->bRequestType & USB_REQ_TYP_MASK ) != USB_REQ_TYP_STANDARD ) 
-					{  
-						/* non-standard request */
-						
-						/*Other requests, such as class requests, manufacturer requests, etc.*/	
-						if( pD0_SETUP_REQ->bRequestType & 0x40 )		 		
-						{    
-							/* Vendor request */
-						}		
-						else if( pD0_SETUP_REQ->bRequestType & 0x20 )	 		
+					else if( ( pD0_SETUP_REQ->bRequestType & USB_REQ_TYP_MASK ) == USB_REQ_TYP_CLASS )
+					{
+						/* class request */
+						switch( D0SetupReqCode )
 						{
-							/* class request */
-							switch( D0SetupReqCode )
-							{
-								case DEF_USB_GET_REPORT:								/* 0x01: GET_REPORT */
-									/* Windows sends GET_REPORT during HID initialization.
-									 * Return an empty keyboard report (8 bytes of zeros).
-									 * Without this, the device STALLs and Windows gives Code 43.
-									 */
-									{
-										UINT8 k;
-										for(k = 0; k < 8; k++) {
-											pD0_EP0_BUF[k] = 0;
-										}
-										len = 8;
-										if( D0SetupLen < len ) {
-											len = D0SetupLen;
-										}
+							case DEF_USB_GET_REPORT:								/* 0x01: GET_REPORT */
+								/* Windows sends GET_REPORT during HID initialization.
+								 * Return an empty keyboard report (8 bytes of zeros).
+								 * Without this, the device STALLs and Windows gives Code 43.
+								 */
+								{
+									UINT8 k;
+									for(k = 0; k < 8; k++) {
+										pD0_EP0_BUF[k] = 0;
 									}
-									break;
+									len = 8;
+									if( D0SetupLen < len ) {
+										len = D0SetupLen;
+									}
+								}
+								break;
 
-								case DEF_USB_SET_REPORT:			 				/* 0x09: SET_REPORT */
-									break;
+							case DEF_USB_SET_REPORT:			 				/* 0x09: SET_REPORT */
+								break;
+							
+							case DEF_USB_SET_IDLE:								/* 0x0A: SET_IDLE */
+								Idle_Value = pD0_EP0_BUF[ 3 ];
+								break;
 								
-								case DEF_USB_SET_IDLE:								/* 0x0A: SET_IDLE */
-									Idle_Value = pD0_EP0_BUF[ 3 ];
-									break;
-									
-								case DEF_USB_SET_PROTOCOL:							/* 0x0B: SET_PROTOCOL */
-									Report_Value = pD0_EP0_BUF[ 2 ];
-									break;
-									
-								case DEF_USB_GET_IDLE:								/* 0x02: GET_IDLE */
-									pD0_EP0_BUF[ 0 ] = Idle_Value;
-									len = 1;
-									break;
+							case DEF_USB_SET_PROTOCOL:							/* 0x0B: SET_PROTOCOL */
+								Report_Value = pD0_EP0_BUF[ 2 ];
+								break;
+								
+							case DEF_USB_GET_IDLE:								/* 0x02: GET_IDLE */
+								pD0_EP0_BUF[ 0 ] = Idle_Value;
+								len = 1;
+								break;
 
-								case DEF_USB_GET_PROTOCOL:							/* 0x03: GET_PROTOCOL */
-									pD0_EP0_BUF[ 0 ] = Report_Value;
-									len = 1;
-									break;
-									
-								default:
-									len = 0xFFFF;  							
-									break;
-							}
+							case DEF_USB_GET_PROTOCOL:							/* 0x03: GET_PROTOCOL */
+								pD0_EP0_BUF[ 0 ] = Report_Value;
+								len = 1;
+								break;
+								
+							default:
+								len = 0xFFFF;  							
+								break;
 						}
 					}
 					else
-					{  
-						/* Only supports standard requests/class requests */
-						len = 0xFFFF;  
+					{
+						/* Vendor or reserved request type: not supported, STALL (USB 2.0 9.2.7). Accepting one
+						 * with an OUT data stage would leave its status stage at NAK (EP0 OUT handler) until
+						 * the host times out. */
+						len = 0xFFFF;
 					}
 					
 					if( len == 0xFFFF ) 
