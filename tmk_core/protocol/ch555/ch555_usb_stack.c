@@ -83,13 +83,20 @@ static bool              extra_pending_set[2] = {false, false};
 /*******************************************************************************
  * Endpoints
  ******************************************************************************/
+/* Remote wakeup, if the host enabled it and the bus is suspended: one resume signal per suspend. Until the
+ * host makes a transfer (USB_WakeUpSent), later reports, and the retries of a report that found its endpoint
+ * busy, wait without signalling again. */
+static void wake_host(void) {
+    if (USB_SleepStatus == 0x03 && !USB_WakeUpSent) USB_WakeUp_PC();
+}
+
 /* An IN endpoint answers ACK while it holds a report the host has not read yet; the USB interrupt sets
  * it back to NAK when the host has read it. */
 
 #ifdef USE_D0_EP1_IN
 void send_report_EP1(void *report, size_t size) {
     if (!USB_EnumStatus) return;
-    if (USB_SleepStatus == 0x03) USB_WakeUp_PC();
+    wake_host();
 
     // Check if write ready for a polling interval around 10ms
     uint8_t timeout = 255;
@@ -108,7 +115,7 @@ void send_report_EP1(void *report, size_t size) {
  * previous report. */
 bool send_report_EP2(void *report, size_t size) {
     if (!USB_EnumStatus) return false;
-    if (USB_SleepStatus == 0x03) USB_WakeUp_PC();
+    wake_host();
     if ((D0_EP2RES & MASK_UEP_X_RES) == UEP_X_RES_ACK) return false;
     memcpy(pUSB_BUF_DEV0 + UX_EP2_ADDR, (uint8_t *)report, size);
     D0_EP2T_L = size;
@@ -119,7 +126,7 @@ bool send_report_EP2(void *report, size_t size) {
 #ifdef USE_D0_EP3_IN
 void send_report_EP3(void *report, size_t size) {
     if (!USB_EnumStatus) return;
-    if (USB_SleepStatus == 0x03) USB_WakeUp_PC();
+    wake_host();
 
     // Check if write ready for a polling interval around 10ms
     uint8_t timeout = 255;
@@ -136,7 +143,7 @@ void send_report_EP3(void *report, size_t size) {
 #ifdef USE_D0_EP4_IN
 void send_report_EP4(void *report, size_t size) {
     if (!USB_EnumStatus) return;
-    if (USB_SleepStatus == 0x03) USB_WakeUp_PC();
+    wake_host();
 
     // Check if write ready for a polling interval around 10ms
     uint8_t timeout = 255;
@@ -153,7 +160,7 @@ void send_report_EP4(void *report, size_t size) {
 #ifdef USE_D0_EP5_IN
 void send_report_EP5(void *report, size_t size) {
     if (!USB_EnumStatus) return;
-    if (USB_SleepStatus == 0x03) USB_WakeUp_PC();
+    wake_host();
     uint8_t timeout = 255;
     while (timeout-- && ((D0_EP5RES & MASK_UEP_X_RES) == UEP_X_RES_ACK)) {
         wait_us(40);
@@ -399,7 +406,7 @@ void protocol_pre_task(void) {
 #if !defined(NO_USB_STARTUP_CHECK)
     /* Run the QMK suspend hooks when the bus enters or leaves suspend. Unlike LUFA/ChibiOS this does
      * not wait in a loop: the matrix is still scanned while suspended, and a key press wakes the host
-     * through USB_WakeUp_PC() in the send_report_* functions (if the host enabled remote wakeup).
+     * through wake_host() in the send_report_* functions (if the host enabled remote wakeup).
      * After that signal, the bus counts as suspended until the host makes a transfer. */
     static bool     suspended = false;
     static uint16_t suspend_time;
