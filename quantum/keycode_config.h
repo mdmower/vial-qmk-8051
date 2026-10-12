@@ -24,8 +24,15 @@
 #include "keycode.h"
 #include "action_code.h"
 
+#ifdef KEYCODE_CONFIG_IDENTITY
+/* For a keyboard without magic keycodes or bootmagic: the keymap_config swap bits then stay 0, and these two
+ * return their argument unchanged. */
+#    define keycode_config(keycode) (keycode)
+#    define mod_config(mod) (mod)
+#else
 uint16_t keycode_config(uint16_t keycode);
 uint8_t  mod_config(uint8_t mod);
+#endif
 
 /* NOTE: Not portable. Bit field order depends on implementation */
 typedef union {

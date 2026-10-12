@@ -17,6 +17,8 @@
 
 #include "keycode_config.h"
 
+#ifndef KEYCODE_CONFIG_IDENTITY
+
 /** \brief keycode_config
  *
  * This function is used to check a specific keycode against the bootmagic config,
@@ -162,3 +164,4 @@ __attribute__((weak)) uint8_t mod_config(uint8_t mod) {
 
     return mod;
 }
+#endif // KEYCODE_CONFIG_IDENTITY
