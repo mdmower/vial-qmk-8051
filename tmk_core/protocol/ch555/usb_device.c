@@ -205,22 +205,21 @@ USB_DevIntNext:
 		//dprint("d0tr");
 		/* D0 data transfer completed */
 		
-		/* INCREDIBLY IMPORTANT: bUXS_SETUP_ACT indicates a SETUP packet arrived.
-		 * The CH555 specification dictates that MASK_UXS_TOKEN retains its LAST
-		 * transaction value when a SETUP packet arrives. Therefore, we MUST NOT
-		 * include bUXS_SETUP_ACT in the switch statement below, or we will
-		 * incorrectly jump to a random enpoint's handler and ignore the SETUP! */
-		if( D0_STATUS & bUXS_SETUP_ACT )
-		{
-			goto handle_ep0_setup;
-		}
-
+		/* A SETUP that arrives while another D0 completion is pending sets bUXS_SETUP_ACT and leaves MASK_UXS_TOKEN
+		 * and MASK_UXS_ENDP at that completion (a SETUP never changes MASK_UXS_ENDP). The completion is handled
+		 * first. After D0_STATUS = 0 the controller sets bUX_IF_D0_TRANS again with bUXS_SETUP_ACT and token FREE,
+		 * and the next pass (USB_DevIntNext) handles the SETUP (datasheet, D0_STATUS; seen on the K580). */
 		switch( D0_STATUS & ( MASK_UXS_TOKEN | MASK_UXS_ENDP ) )     
 		{
 			/* Analyze action tokens and endpoint numbers */
 
 		case UXS_TOKEN_IN | 0:
-            	/* endpoint 0# IN — normal continuation (no new SETUP) */
+            	/* endpoint 0# IN */
+			if( D0_STATUS & bUXS_SETUP_ACT )
+			{
+				/* A SETUP followed: it ends this control transfer, and its packet is in the EP0 buffer */
+				break;
+			}
 			switch( D0SetupReqCode ) 
 			{
 				case USB_GET_DESCRIPTOR:
@@ -334,7 +333,12 @@ USB_DevIntNext:
 #endif
                
 		case UXS_TOKEN_OUT | 0:  
- 				/* endpoint 0# OUT — normal data/status phase */
+ 				/* endpoint 0# OUT */
+				if( D0_STATUS & bUXS_SETUP_ACT )
+				{
+					/* A SETUP followed: it ends this control transfer, and its packet is in the EP0 buffer */
+					break;
+				}
 				switch( D0SetupReqCode ) 
 				{
 					case HID_SET_REPORT:
@@ -361,7 +365,11 @@ USB_DevIntNext:
                 break;
 			
 			default:
-handle_ep0_setup:
+					if( ( D0_STATUS & ( bUXS_SETUP_ACT | MASK_UXS_TOKEN ) ) != ( bUXS_SETUP_ACT | UXS_TOKEN_FREE ) )
+					{
+						/* not a SETUP: a completion without a case above */
+						break;
+					}
 					/* endpoint 0# SETUP */
 					len = 0;  														/* Defaults to success and uploading 0 length */ 
 					D0_EP0RES = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_ACK | UEP_T_RES_ACK;
