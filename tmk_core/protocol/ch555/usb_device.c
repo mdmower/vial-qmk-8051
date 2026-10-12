@@ -128,7 +128,11 @@ void USB_EP_init( void )
 {
     /* EP0: clear toggle bits to DATA0, ACK for OUT/SETUP, NAK for IN */
     HB_EP0RES = bUEP_X_AUTO_TOG | UEP_R_RES_ACK | UEP_T_RES_NAK;
-    HB_EP1RES = bUEP_X_AUTO_TOG | UEP_X_RES_NAK;
+    /* IN endpoints: no bUEP_X_AUTO_TOG. With it, a completed transaction on one sub-device also flips the
+     * IN toggle of the other sub-devices' auto-toggle endpoints (seen on the VS11K33A), and the next report
+     * of such an endpoint repeats the last toggle and is discarded by the host. The interrupt toggles them
+     * on each IN completion instead. OUT endpoints keep the auto-toggle (no flips seen). */
+    HB_EP1RES = UEP_X_RES_NAK;
 
     D0_EP0RES = UEP_R_RES_ACK | UEP_T_RES_NAK;  /* toggle bits cleared (DATA0) */
     D0_EP_MOD = 0;              /* D0 disabled until PORT_RESET on port 1 */
@@ -137,21 +141,21 @@ void USB_EP_init( void )
     D2_EP0RES = UEP_R_RES_ACK | UEP_T_RES_NAK;
     D2_EP_MOD = 0;              /* D2 disabled until PORT_RESET on port 3 */
 #ifdef USE_D0_EP1_IN
-    D0_EP1RES = bUEP_X_AUTO_TOG | UEP_X_RES_NAK;  /* auto-toggle, NAK until we have data */
+    D0_EP1RES = UEP_X_RES_NAK;  /* DATA0, NAK until we have data */
 #endif
 #ifdef USE_D0_EP2_IN
-    D0_EP2RES = bUEP_X_AUTO_TOG | UEP_X_RES_NAK;
+    D0_EP2RES = UEP_X_RES_NAK;
 #endif
 #ifdef USE_D0_EP3_IN
-    D0_EP3RES = bUEP_X_AUTO_TOG | UEP_X_RES_NAK; 
+    D0_EP3RES = UEP_X_RES_NAK; 
 #endif
 #ifdef USE_D0_EP5_IN
 	D0_EP_MOD |= bUX_EP5I_EN;
-    D0_EP5RES = bUEP_X_AUTO_TOG | UEP_X_RES_NAK; 
+    D0_EP5RES = UEP_X_RES_NAK; 
 #endif
 #ifdef USE_D0_EP6_IN
 	D0_EP_MOD |= bUX_EP6I_EN;
-    D0_EP6RES = bUEP_X_AUTO_TOG | UEP_X_RES_NAK; 
+    D0_EP6RES = UEP_X_RES_NAK; 
 #endif
 
 #ifdef USE_D0_EP1_OUT
@@ -172,10 +176,10 @@ void USB_EP_init( void )
 #endif
 
 #ifdef USE_D1_EP1_IN
-    D1_EP1RES = bUEP_X_AUTO_TOG | UEP_X_RES_NAK;
+    D1_EP1RES = UEP_X_RES_NAK;
 #endif
 #ifdef USE_D2_EP1_IN
-    D2_EP1RES = bUEP_X_AUTO_TOG | UEP_X_RES_NAK;
+    D2_EP1RES = UEP_X_RES_NAK;
 #endif
 #ifdef USE_D2_EP2_OUT
     D2_EP_MOD |= bUX_EP2O_EN;
@@ -375,6 +379,7 @@ USB_DevIntNext:
 				
 			case UXS_TOKEN_IN | 1:
 				/* Hub EP1 IN — port status change notification sent, go back to NAK */
+				HB_EP1RES ^= bUEP_X_TOG;
 				if( hub_ep1_pending ) {
 					/* Send 1-byte bitmask: bit N = port N changed */
 					pHB_EP1_BUF[0] = hub_ep1_pending;
@@ -564,7 +569,7 @@ handle_hb_ep0_setup:
 
 						case USB_SET_CONFIGURATION:
 							/* Hub configured — arm EP1 IN; ACK immediately if a port change is pending */
-							HB_EP1RES = bUEP_X_AUTO_TOG | (hub_ep1_pending ? UEP_X_RES_ACK : UEP_X_RES_NAK);
+							HB_EP1RES = hub_ep1_pending ? UEP_X_RES_ACK : UEP_X_RES_NAK;
 							break;
 
 						case USB_GET_STATUS:
@@ -693,6 +698,7 @@ handle_hb_ep0_setup:
 #ifdef USE_D0_EP6_IN
             case UXS_TOKEN_IN | 6:  
 				/* endpoint 6# upload completed */            	
+				D0_EP6RES ^= bUEP_X_TOG;
 				D0_EP6RES = D0_EP6RES & ~MASK_UEP_X_RES | UEP_X_RES_NAK; 		/* Pause upload */
                 break;
 #endif 
@@ -700,6 +706,7 @@ handle_hb_ep0_setup:
 #ifdef USE_D0_EP5_IN
             case UXS_TOKEN_IN | 5:  
 				/* endpoint 5# upload completed */            	
+				D0_EP5RES ^= bUEP_X_TOG;
 				D0_EP5RES = D0_EP5RES & ~MASK_UEP_X_RES | UEP_X_RES_NAK; 		/* Pause upload */
                 break;
 #endif 
@@ -707,6 +714,7 @@ handle_hb_ep0_setup:
 #ifdef USE_D0_EP3_IN
             case UXS_TOKEN_IN | 3:  
 				/* endpoint 3# upload completed */            	
+				D0_EP3RES ^= bUEP_X_TOG;
 				D0_EP3RES = D0_EP3RES & ~MASK_UEP_X_RES | UEP_X_RES_NAK; 		/* Pause upload */
                 break;
 #endif
@@ -714,6 +722,7 @@ handle_hb_ep0_setup:
 #ifdef USE_D0_EP2_IN
             case UXS_TOKEN_IN | 2:  
 				/* endpoint 2# upload completed */            	
+				D0_EP2RES ^= bUEP_X_TOG;
 				D0_EP2RES = D0_EP2RES & ~MASK_UEP_X_RES | UEP_X_RES_NAK; 		/* Pause upload */
                 break;
 #endif
@@ -721,6 +730,7 @@ handle_hb_ep0_setup:
 #ifdef USE_D0_EP1_IN
             case UXS_TOKEN_IN | 1:  
             	/* endpoint 1# upload completed */
+                D0_EP1RES ^= bUEP_X_TOG;
                 D0_EP1RES = D0_EP1RES & ~MASK_UEP_X_RES | UEP_X_RES_NAK; 		/* Pause upload */
 				KB_USB_UpStatus = 0x01;
                 break;
@@ -1376,6 +1386,7 @@ handle_ep0_setup:
 #ifdef USE_D1_EP1_IN
 			case UXS_TOKEN_IN | 1:
 				/* D1 EP1 IN: NKRO report sent, pause until next report */
+				D1_EP1RES ^= bUEP_X_TOG;
 				D1_EP1RES = D1_EP1RES & ~MASK_UEP_X_RES | UEP_X_RES_NAK;
 				break;
 #endif
@@ -1502,6 +1513,7 @@ handle_d1_ep0_setup:
 								break; 
 							case USB_SET_CONFIGURATION:
 								D1UsbConfig = pD1_SETUP_REQ->wValueL;
+								D1_EP1RES &= ~bUEP_X_TOG;  /* the host restarts at DATA0 */
 								break;			
 							default:
 								len = 0xFFFF;  
@@ -1561,6 +1573,7 @@ handle_d1_ep0_setup:
 #ifdef USE_D2_EP1_IN
 			case UXS_TOKEN_IN | 1:
 				/* D2 EP1 IN: RAW HID report sent, pause until next */
+				D2_EP1RES ^= bUEP_X_TOG;
 				D2_EP1RES = D2_EP1RES & ~MASK_UEP_X_RES | UEP_X_RES_NAK;
 				break;
 #endif
@@ -1709,6 +1722,8 @@ handle_d2_ep0_setup:
 								break; 
 							case USB_SET_CONFIGURATION:
 								D2UsbConfig = pD2_SETUP_REQ->wValueL;
+								D2_EP1RES &= ~bUEP_X_TOG;  /* the host restarts at DATA0 */
+								D2_EP2RES &= ~bUEP_X_TOG;
 								break;			
 							default:
 								len = 0xFFFF;  
