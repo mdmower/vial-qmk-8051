@@ -42,16 +42,20 @@ Works:
   controller. Lighting effects with separate settings for the keys and the side lights, set on the Fn layer
   (see [the K580 readme](keyboards/redragon/k580/readme.md#default-keymap)). The LEDs turn off while the host
   is suspended.
+- The lighting settings and the roller mode are saved in the CH555 data flash and kept at power-off.
 - Holding Esc while plugging in the keyboard enters the bootloader.
 
 Not implemented:
 - USB serial number.
-- Saved settings: the lighting settings are kept in RAM, so changes made at runtime are lost at power-off.
-  QMK's EEPROM is a driver that stores nothing.
+- QMK's EEPROM: the driver stores nothing, so QMK settings kept in EEPROM (eeconfig) are not saved. The
+  keyboard's own settings use the data flash instead.
 - Vial: it did not work in the original port, and this branch has no Vial keymap.
 
 Other limits:
-- About 16.8 KB of the application region (0x2800–0xEFBF, 51,136 bytes) is free.
+- About 15.3 KB of the application region (0x2800–0xEFBF, 51,136 bytes) is free.
+- To save flash, the K580 build turns off tap and one-shot keys, `send_string`, Grave Escape and the magic-key
+  swap settings; the list is at the end of
+  [keyboards/redragon/k580/rules.mk](keyboards/redragon/k580/rules.mk).
 - QMK enumerates as a USB hub (`3938:1195`) with three devices: boot keyboard, media keys and NKRO keyboard.
 - The backup and flash tools (`util/k580_dump.py`, `util/evision_flash.py`) run on Linux only.
 - Other K580 revisions may use a different MCU; one keyboard database lists the K580 with a Sonix SN32F248B.
@@ -81,5 +85,10 @@ These limits of SDCC and of this port affect keyboard and keymap code:
   stubs are still compiled, so keyboard-level code cannot override them; board setup goes in the keymap's
   `*_user` functions.
 - QMK's `rgb_matrix` does not compile with SDCC.
+- SDCC compiles a copy of every `static inline` function of a header into each file that includes the header,
+  used or not. Use a macro, or define the function once in a `.c` file.
+- Some files do not include the keyboard's `config.h` (for example `tmk_core/protocol/ch555/usb_device.c`,
+  `drivers/eeprom/eeprom_driver.c`, `quantum/keycode_config.c`). Defines they need, and defines that change
+  shared types such as `NO_ACTION_TAPPING`, go in `OPT_DEFS` in `rules.mk`.
 - `printf` and the console are disabled to save flash. A keymap-level `config.h` can enable `printf` again, and
   the K580 image then no longer fits.

@@ -36,6 +36,7 @@ would do.
 | 0x0000–0x27FF | Evision OEM bootloader (USB `0c45:7687`). The tools here never write it. |
 | 0x27C0 | Boot marker `AA 55 33 CC`. The bootloader starts the application only while it is present. |
 | 0x2800–0xEFBF | Application: stock firmware or QMK. The bootloader erases and programs this range. |
+| 0xF000–0xF3FF | Data flash. QMK saves its settings here. Flashing does not erase it, and the stock firmware 1.04 does not use it. |
 | 0xF400– | WCH factory ISP bootloader (`4348:55e0`). Not used: flashing through it overwrites the OEM bootloader. |
 
 Entering the bootloader erases the boot marker. The keyboard then stays in the bootloader, also after a replug,
@@ -100,14 +101,16 @@ On the tested keyboard, a restore of firmware 1.04 gave a full 64 KB read-back i
 ## Default keymap
 
 - Layer 0: the printed layout. Media keys: previous, play/pause, next. Roller: volume; the roller toggle key
-  switches it to key LED brightness and back (volume after power-up).
+  switches it to key LED brightness and back. The roller mode is saved like the lighting settings.
 - Layer 1 (Fn): Fn+Esc enters the bootloader (`QK_BOOT`). Fn+F1–F12 send the functions printed on the keycaps:
   media player, volume down, volume up, mute, stop, previous, play/pause, next, mail, browser home, calculator,
   search. Fn+Win toggles Win Lock, which blocks both Win keys and lights the Win Lock LED. Win Lock is off after
   power-up.
 - G1–G5 and Rec: F13–F17 and F18, for shortcuts set in the operating system.
 - Lighting ([led_fx.c](led_fx.c)): two zones with separate settings, the keys and the side lights. Fn plus the
-  keys below steps a setting; with Shift held it steps back. The settings return to the defaults at power-off.
+  keys below steps a setting; with Shift held it steps back. The settings are saved in the data flash 3 s after
+  the last change and kept at power-off ([flash_store.c](flash_store.c)); the LEDs flicker briefly while they
+  are saved.
 
   | Setting | Keys | Side lights |
   |---|---|---|
