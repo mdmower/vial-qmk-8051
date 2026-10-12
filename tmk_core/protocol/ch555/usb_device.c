@@ -1106,7 +1106,16 @@ USB_DevIntNext:
 void USB_WakeUp_PC( void )
 {
 	UINT8  save;
-	
+
+	/* USB 2.0 7.1.7.7: resume signalling only after 5 ms of idle bus. bUX_SUSPEND is set after 4-6 ms of idle
+	 * bus (datasheet, Tusp); with the bit still set 2 ms later, the bus has been idle for at least 6 ms. If the
+	 * host has resumed the bus meanwhile, no signal is needed. */
+	mDelaymS( 2 );
+	if( !( USB_IF & bUX_SUSPEND ) )
+	{
+		return;
+	}
+
 	/* The resume signal also clears bUX_SUSPEND, and if the host stays asleep the bit is not set
 	 * again. USB_WakeUpSent marks the bus as still suspended until the next host transfer. */
 	USB_WakeUpSent = 0x01;
