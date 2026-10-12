@@ -1945,7 +1945,6 @@ void CH55X_Sleep_Deal( void )
 	USB_CTRL &= ~bUX_DP_PU_EN;
 	P6_DIR = 0;
 	
-	dprint("sleepin...");
 	PCON |= PD;																	/* sleep */
 		
 	mDelaymS( 1 ); 
