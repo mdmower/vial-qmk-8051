@@ -8,7 +8,10 @@ CH555_SRC_USB  = $(CH555_PATH)/gpio.c
 ifeq ($(strip $(RGB_MATRIX_ENABLE)), yes)
 CH555_SRC_USB += $(CH555_PATH)/rgb_matrix_ch555.c
 endif
-CH555_SRC_USB += $(CH555_PATH)/flash.c
+# Data flash driver (WCH's FLASH.C is not compiled: it can also write code flash)
+ifeq ($(strip $(CH555_DATA_FLASH_ENABLE)), yes)
+CH555_SRC_USB += $(CH555_PATH)/data_flash.c
+endif
 CH555_SRC_USB += $(CH555_PATH)/hal.c
 #CH555_SRC_USB += $(CH555_DIR)/usb_handler.c
 CH555_SRC_USB += $(CH555_DIR)/usb_device.c
