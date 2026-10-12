@@ -59,6 +59,13 @@ ifeq ($(strip $(EVISION_OEM_BOOTLOADER)), yes)
     OPT_DEFS += -DEVISION_OEM_BOOTLOADER
 endif
 
+# USB serial number of the keyboard devices (the hub reports none), optional:
+# qmk compile ... -e SERIAL_NUMBER=<serial>, or SERIAL_NUMBER=<serial> util/k580_build.sh.
+# Letters, digits and . _ : - only (the value passes through the shell), at most 126 characters.
+ifneq ($(strip $(SERIAL_NUMBER)),)
+    OPT_DEFS += -DSERIAL_NUMBER=\"$(strip $(SERIAL_NUMBER))\"
+endif
+
 # Disabled for flash space (2026-10-12; image end 0xEB34 before). Remove a line to use the feature again.
 # - Tap keys (LT, MT, TT, *_T, tap-toggle) and one-shot keys (OSM, OSL) do nothing; MO() still works.
 #   In OPT_DEFS, not config.h: they change keyrecord_t, and some files do not include config.h.

@@ -4,6 +4,7 @@
 # interrupt table at 0x3000; see util/evision_oem_image.py).
 #
 #   util/k580_build.sh [KEYMAP]     (default: default)
+#   SERIAL_NUMBER=<serial> before the command sets the USB serial number (optional).
 #
 # Steps: `qmk compile` (its final link fails by design in this fork), then assemble and link as compile.sh
 # does, but linked at --code-loc 0x3027 instead of 0x0000, then util/evision_oem_image.py.
@@ -14,6 +15,10 @@ tree=$(cd "$(dirname "$0")/.." && pwd)
 km=${1:-default}
 kb=redragon_k580
 code_loc=0x3027
+serial=${SERIAL_NUMBER:-}
+if [ -n "$serial" ] && ! [[ $serial =~ ^[A-Za-z0-9._:-]{1,126}$ ]]; then
+    echo "SERIAL_NUMBER: letters, digits and . _ : - only, at most 126 characters" >&2; exit 1
+fi
 obj=.build/obj_${kb}_${km}
 sdcc_ver=$(sed -n 's/^ARG SDCC_VER=//p' "$tree/util/k580_build.Dockerfile")
 image=vial-qmk-8051-k580:sdcc-${sdcc_ver:?}
@@ -26,7 +31,7 @@ if ! docker image inspect "$image" >/dev/null 2>&1; then
 fi
 rm -rf "$tree/.build"
 mkdir -p "$tree/.build"
-run qmk compile -kb redragon/k580 -km "$km" -e EVISION_OEM_BOOTLOADER=yes >"$tree/.build/k580_qmk.log" 2>&1 || true
+run qmk compile -kb redragon/k580 -km "$km" -e EVISION_OEM_BOOTLOADER=yes ${serial:+-e SERIAL_NUMBER=$serial} >"$tree/.build/k580_qmk.log" 2>&1 || true
 if ! ls "$tree/$obj"/quantum/main.asm >/dev/null 2>&1 || grep -qE ":[0-9]+: (syntax )?error|Internal error" "$tree/.build/k580_qmk.log"; then
     echo "qmk compile failed before the link step; see .build/k580_qmk.log" >&2; exit 1
 fi

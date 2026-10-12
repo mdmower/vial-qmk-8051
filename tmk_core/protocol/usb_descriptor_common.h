@@ -18,7 +18,12 @@
 
 // Prefix string literal with L for descriptors
 #define USBCONCAT(a, b) a##b
-#define USBSTR(s) USBCONCAT(L, s)
+#ifdef __SDCC
+// SDCC's wchar_t is 32 bits and SDCC has no -fshort-wchar: use C11 u"" literals (char16_t, UTF-16)
+#    define USBSTR(s) USBCONCAT(u, s)
+#else
+#    define USBSTR(s) USBCONCAT(L, s)
+#endif
 
 #define HID_VALUE_16(v) ((uint8_t)(v & 0xFF)), ((uint8_t)(v >> 8))
 

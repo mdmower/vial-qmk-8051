@@ -470,11 +470,25 @@ extern const USB_Descriptor_Configuration_D2_t PROGMEM ConfigurationDescriptor_D
 #  endif
 #endif
 
-extern const USB_Descriptor_String_t PROGMEM LanguageString;
-extern const USB_Descriptor_String_t PROGMEM ManufacturerString;
-extern const USB_Descriptor_String_t PROGMEM ProductString;
+#ifdef __SDCC
+/*
+ * String descriptor with 16-bit characters. LUFA's USB_Descriptor_String_t has a wchar_t array when ARCH is
+ * ARCH_AVR8, which LUFA sets when ARCH is not defined, and SDCC's wchar_t is 32 bits. Initialise it with
+ * USBSTR(), which gives a u"" literal under SDCC.
+ */
+typedef struct {
+    USB_Descriptor_Header_t Header;
+    uint16_t                UnicodeString[];
+} usb_string_descriptor_t;
+#else
+typedef USB_Descriptor_String_t usb_string_descriptor_t;
+#endif
+
+extern const usb_string_descriptor_t PROGMEM LanguageString;
+extern const usb_string_descriptor_t PROGMEM ManufacturerString;
+extern const usb_string_descriptor_t PROGMEM ProductString;
 #if defined(SERIAL_NUMBER)
-extern const USB_Descriptor_String_t PROGMEM SerialNumberString;
+extern const usb_string_descriptor_t PROGMEM SerialNumberString;
 #endif
 
 extern const USB_Descriptor_Device_t PROGMEM HubDeviceDescriptor;

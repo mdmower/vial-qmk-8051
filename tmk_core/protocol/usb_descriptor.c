@@ -1315,15 +1315,8 @@ const USB_Descriptor_Configuration_D2_t PROGMEM ConfigurationDescriptor_D2 = {
 
 /*
  * String descriptors
- *
- * IMPORTANT: SDCC for 8051 (CH555) has 32-bit wchar_t, so L"string" produces
- * 4 bytes per character instead of USB-required 16-bit UTF-16LE. The USBSTR()
- * macro uses L"" and is therefore broken on CH555. For CH555 builds we use
- * explicit uint16_t character arrays {'R','e','d','r',...} which correctly
- * produce 2-byte UTF-16LE values. The LanguageString is safe on all platforms
- * since it uses a uint16_t literal {0x0409} directly.
  */
-const USB_Descriptor_String_t PROGMEM LanguageString = {
+const usb_string_descriptor_t PROGMEM LanguageString = {
     .Header = {
         .Size                   = 4,
         .Type                   = DTYPE_String
@@ -1331,33 +1324,7 @@ const USB_Descriptor_String_t PROGMEM LanguageString = {
     .UnicodeString              = {LANGUAGE_ID_ENG}
 };
 
-#ifdef PROTOCOL_CH555
-/*
- * CH555/SDCC-safe string descriptors using explicit uint16_t character arrays.
- * Each char literal (e.g. 'R') is implicitly promoted to uint16_t (0x0052),
- * producing correct USB UTF-16LE encoding without wchar_t.
- *
- * bLength = 2 (header) + 2 * number_of_characters
- */
-const USB_Descriptor_String_t PROGMEM ManufacturerString = {
-    .Header = {
-        .Size                   = 2 + 2 * 8,  /* "Redragon" = 8 chars */
-        .Type                   = DTYPE_String
-    },
-    .UnicodeString              = {'R','e','d','r','a','g','o','n'}
-};
-
-const USB_Descriptor_String_t PROGMEM ProductString = {
-    .Header = {
-        .Size                   = 2 + 2 * 9,  /* "K580 Vata" = 9 chars */
-        .Type                   = DTYPE_String
-    },
-    .UnicodeString              = {'K','5','8','0',' ','V','a','t','a'}
-};
-
-#else /* !PROTOCOL_CH555 — use USBSTR() (L"") which is fine on AVR/ARM */
-
-const USB_Descriptor_String_t PROGMEM ManufacturerString = {
+const usb_string_descriptor_t PROGMEM ManufacturerString = {
     .Header = {
         .Size                   = sizeof(USBSTR(MANUFACTURER)),
         .Type                   = DTYPE_String
@@ -1365,7 +1332,7 @@ const USB_Descriptor_String_t PROGMEM ManufacturerString = {
     .UnicodeString              = USBSTR(MANUFACTURER)
 };
 
-const USB_Descriptor_String_t PROGMEM ProductString = {
+const usb_string_descriptor_t PROGMEM ProductString = {
     .Header = {
         .Size                   = sizeof(USBSTR(PRODUCT)),
         .Type                   = DTYPE_String
@@ -1373,13 +1340,8 @@ const USB_Descriptor_String_t PROGMEM ProductString = {
     .UnicodeString              = USBSTR(PRODUCT)
 };
 
-#endif /* PROTOCOL_CH555 */
-
 #if defined(SERIAL_NUMBER)
-#  ifdef PROTOCOL_CH555
-#    warning "SERIAL_NUMBER with PROTOCOL_CH555 needs manual uint16_t array conversion"
-#  endif
-const USB_Descriptor_String_t PROGMEM SerialNumberString = {
+const usb_string_descriptor_t PROGMEM SerialNumberString = {
     .Header = {
         .Size                   = sizeof(USBSTR(SERIAL_NUMBER)),
         .Type                   = DTYPE_String

@@ -73,39 +73,6 @@ volatile UINT8  USB_SleepStatus = 0x00;											/* USB sleep state */
 volatile UINT8  MCU_Sleep_Operate = 0x00;										/* Mcu sleep operation flag */
 volatile UINT8  USB_WakeUpSent = 0x00;											/* remote wakeup signalled, no host transfer since */
 
-/*
- * Raw byte-array USB string descriptors for CH555.
- * SDCC 8051 has 32-bit wchar_t AND mangles uint16_t flexible array members,
- * so we bypass all struct/type machinery and hand-place every byte as
- * correct USB UTF-16LE. Format: bLength, bDescriptorType(0x03), then
- * pairs of (char, 0x00) for each ASCII character.
- */
-static const UINT8 __code RawManufacturerString[] = {
-    18, 0x03,                   /* bLength=18, bDescriptorType=STRING */
-    'R', 0x00,                  /* UTF-16LE 'R' */
-    'e', 0x00,                  /* UTF-16LE 'e' */
-    'd', 0x00,                  /* UTF-16LE 'd' */
-    'r', 0x00,                  /* UTF-16LE 'r' */
-    'a', 0x00,                  /* UTF-16LE 'a' */
-    'g', 0x00,                  /* UTF-16LE 'g' */
-    'o', 0x00,                  /* UTF-16LE 'o' */
-    'n', 0x00                   /* UTF-16LE 'n' */
-};
-
-static const UINT8 __code RawProductString[] = {
-    20, 0x03,                   /* bLength=20, bDescriptorType=STRING */
-    'K', 0x00,                  /* UTF-16LE 'K' */
-    '5', 0x00,                  /* UTF-16LE '5' */
-    '8', 0x00,                  /* UTF-16LE '8' */
-    '0', 0x00,                  /* UTF-16LE '0' */
-    ' ', 0x00,                  /* UTF-16LE ' ' */
-    'V', 0x00,                  /* UTF-16LE 'V' */
-    'a', 0x00,                  /* UTF-16LE 'a' */
-    't', 0x00,                  /* UTF-16LE 't' */
-    'a', 0x00                   /* UTF-16LE 'a' */
-};
-   
-
 volatile UINT8  KB_USB_UpStatus = 0x00;											/* endpoint 1 busy flag*/
 #ifdef USE_D0_EP1_OUT
 volatile UINT8  ep1_data_wait   = 0x00;											/* endpoint 1 data waiting flag*/
@@ -547,6 +514,15 @@ handle_hb_ep0_setup:
 									pHBDescr = (PUINT8C)(&HubDescriptor);
 									len = sizeof(USB_Descriptor_Hub_t);
 									break;
+								case 0x03: // String (HubDeviceDescriptor names 1 and 2)
+									switch( pHB_SETUP_REQ->wValueL )
+									{
+										case 0: pHBDescr = (PUINT8C)( &LanguageString ); len = LanguageString.Header.Size; break;
+										case 1: pHBDescr = (PUINT8C)( &ManufacturerString ); len = ManufacturerString.Header.Size; break;
+										case 2: pHBDescr = (PUINT8C)( &ProductString ); len = ProductString.Header.Size; break;
+										default: len = 0xFFFF; break;
+									}
+									break;
 								default:
 									len = 0xFFFF;
 									break;
@@ -790,15 +766,13 @@ handle_ep0_setup:
 										switch( pD0_SETUP_REQ->wValueL ) 
 										{
 											case 1:
-												/* Use raw byte array to bypass SDCC struct issues */
-												pD0Descr = (PUINT8C)( RawManufacturerString );
-												len = RawManufacturerString[0];
+												pD0Descr = (PUINT8C)( &ManufacturerString );
+												len = ManufacturerString.Header.Size;
 												break;
 																			
 											case 2:
-												/* Use raw byte array to bypass SDCC struct issues */
-												pD0Descr = (PUINT8C)( RawProductString );
-												len = RawProductString[0];
+												pD0Descr = (PUINT8C)( &ProductString );
+												len = ProductString.Header.Size;
 												break;
 												
 											case 0:
@@ -1452,9 +1426,12 @@ handle_d1_ep0_setup:
 									case USB_DESCR_TYP_STRING:  
 										switch( pD1_SETUP_REQ->wValueL ) 
 										{
-											case 1: pD1Descr = (PUINT8C)( RawManufacturerString ); len = RawManufacturerString[0]; break;
-											case 2: pD1Descr = (PUINT8C)( RawProductString ); len = RawProductString[0]; break;
+											case 1: pD1Descr = (PUINT8C)( &ManufacturerString ); len = ManufacturerString.Header.Size; break;
+											case 2: pD1Descr = (PUINT8C)( &ProductString ); len = ProductString.Header.Size; break;
 											case 0: pD1Descr = (PUINT8C)( &LanguageString ); len = LanguageString.Header.Size; break;
+#if defined(SERIAL_NUMBER)
+											case 3: pD1Descr = (PUINT8C)( &SerialNumberString ); len = SerialNumberString.Header.Size; break;
+#endif
 											default: len = 0xFFFF; break;
 										}
 										break;
@@ -1647,9 +1624,12 @@ handle_d2_ep0_setup:
 									case USB_DESCR_TYP_STRING:  
 										switch( pD2_SETUP_REQ->wValueL ) 
 										{
-											case 1: pD2Descr = (PUINT8C)( RawManufacturerString ); len = RawManufacturerString[0]; break;
-											case 2: pD2Descr = (PUINT8C)( RawProductString ); len = RawProductString[0]; break;
+											case 1: pD2Descr = (PUINT8C)( &ManufacturerString ); len = ManufacturerString.Header.Size; break;
+											case 2: pD2Descr = (PUINT8C)( &ProductString ); len = ProductString.Header.Size; break;
 											case 0: pD2Descr = (PUINT8C)( &LanguageString ); len = LanguageString.Header.Size; break;
+#if defined(SERIAL_NUMBER)
+											case 3: pD2Descr = (PUINT8C)( &SerialNumberString ); len = SerialNumberString.Header.Size; break;
+#endif
 											default: len = 0xFFFF; break;
 										}
 										break;
