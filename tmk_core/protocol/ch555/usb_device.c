@@ -625,7 +625,9 @@ USB_DevIntNext:
 														
 							case USB_SET_CONFIGURATION:
 								D0UsbConfig = pD0_SETUP_REQ->wValueL;
-								USB_EnumStatus = 0x01;
+								/* configuration 0 returns the device to the Address state (USB 2.0 9.4.7): no reports until
+								 * the host configures it again */
+								USB_EnumStatus = D0UsbConfig ? 0x01 : 0x00;
 								KB_USB_UpStatus = 0x01;
 								/* the host restarts every endpoint at DATA0 */
 #ifdef USE_D0_EP1_IN
