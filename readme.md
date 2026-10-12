@@ -4,6 +4,10 @@ A fork of [vial-qmk](https://github.com/vial-kb/vial-qmk), itself a fork of [QMK
 that builds QMK for 8051 microcontrollers in the WCH CH555 family with the SDCC compiler. The branch `k580-ch55x`
 supports the Redragon K580 RGB (Evision VS11K33A), flashed through the keyboard's own Evision bootloader.
 
+Despite the vial-qmk origin and the repository name, Vial does not work here. On the K580, Vial and the VIA
+code it needs add about 7.8 KB of code and more internal RAM than the build has free, so the link fails.
+Keymaps are changed in the source and flashed as a new build.
+
 ## Credits
 
 - **vuhuycan**, [vuhuycan/qmk-8051](https://github.com/vuhuycan/qmk-8051): the port of vial-qmk to the 8051 and
@@ -47,7 +51,7 @@ Not implemented:
 - Vial: it did not work in the original port, and this branch has no Vial keymap.
 
 Other limits:
-- About 2.7 KB of the application region (0x2800–0xEFBF, 51,136 bytes) is free.
+- About 1.1 KB of the application region (0x2800–0xEFBF, 51,136 bytes) is free.
 - QMK enumerates as a USB hub (`3938:1195`) with three devices: boot keyboard, media keys and NKRO keyboard.
 - The backup and flash tools (`util/k580_dump.py`, `util/evision_flash.py`) run on Linux only.
 - Other K580 revisions may use a different MCU; one keyboard database lists the K580 with a Sonix SN32F248B.
