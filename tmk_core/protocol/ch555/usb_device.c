@@ -23,7 +23,7 @@ volatile UINT16	D0SetupLen = 0x00;												/* USB Setup packet length */
 volatile PUINT8C	pD0Descr;   /* points into __code Flash — MUST be PUINT8C on SDCC/8051 */
 
 volatile UINT8  D0UsbConfig = 0x00;												/* USB configuration flags - the Configuation Id selected */
-volatile UINT8  Report_Value = 0x00;                                            /* hid interface related */
+volatile UINT8  Report_Value = 0x01;                                            /* HID protocol of interface 0 (SET_PROTOCOL): 0 boot, 1 report (the default, HID 1.11 7.2.6) */
 volatile UINT8  Idle_Value = 0x00;                                              /* host request hid interface go idle */
 volatile UINT8  KB_USB_SetReport = 0x00;										/* */
 
@@ -951,7 +951,11 @@ USB_DevIntNext:
 								break;
 								
 							case DEF_USB_SET_PROTOCOL:							/* 0x0B: SET_PROTOCOL */
-								Report_Value = pD0_EP0_BUF[ 2 ];
+								/* only the keyboard interface has a boot protocol; protocol_post_task() applies it */
+								if( pD0_SETUP_REQ->wIndexL == KEYBOARD_INTERFACE )
+								{
+									Report_Value = pD0_EP0_BUF[ 2 ];
+								}
 								break;
 								
 							case DEF_USB_GET_IDLE:								/* 0x02: GET_IDLE */
@@ -1065,6 +1069,7 @@ USB_DevIntNext:
 		D0UsbConfig = 0x00;								 /* Not yet configured */
 		D0SetupReqCode = 0xFF;							 /* No pending request */
 		D0SetupLen = 0x00;
+		Report_Value = 0x01;							 /* report protocol */
 		USB_SleepStatus = 0x00;							 /* Clear sleep state — fresh start */
 #ifdef USE_D0_EP1_OUT
 		ep1_data_wait = 0x00;

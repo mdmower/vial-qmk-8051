@@ -58,7 +58,7 @@ extern keymap_config_t keymap_config;
 #endif
 
 uint8_t keyboard_idle = 0;
-/* 0: Boot Protocol, 1: Report Protocol(default) */
+/* 0: Boot Protocol, 1: Report Protocol(default); follows SET_PROTOCOL (Report_Value) in protocol_post_task() */
 uint8_t        keyboard_protocol  = 1;
 static uint8_t keyboard_led_state = 0;
 
@@ -434,6 +434,14 @@ void protocol_post_task(void) {
     if (KB_USB_SetReport != keyboard_led_state) {
         keyboard_led_state = KB_USB_SetReport;
         led_set(keyboard_led_state);
+    }
+
+    /* SET_PROTOCOL (USB interrupt) takes effect here. QMK core builds boot reports (6 key bytes, EP1) in boot
+     * protocol and NKRO reports (bitmap, shared endpoint) in report protocol; clear_keyboard() empties the
+     * report and sends it in the new format, as LUFA and ChibiOS do. */
+    if (Report_Value != keyboard_protocol) {
+        keyboard_protocol = Report_Value;
+        clear_keyboard();
     }
 
 #ifdef USE_D0_EP2_IN
