@@ -49,10 +49,11 @@ volatile UINT8  ep4_data_wait   = 0x00;											/* endpoint 4 data waiting fla
 //UINT8D  RGB_Mode = 0x00;
 void USB_EP_init( void )  
 {
-    /* IN endpoints: no bUEP_X_AUTO_TOG. With it, a completed transaction on one sub-device also flips the
-     * IN toggle of the other sub-devices' auto-toggle endpoints (seen on the VS11K33A), and the next report
-     * of such an endpoint repeats the last toggle and is discarded by the host. The interrupt toggles them
-     * on each IN completion instead. OUT endpoints keep the auto-toggle (no flips seen). */
+    /* No bUEP_X_AUTO_TOG; the interrupt toggles every endpoint. IN: with the auto-toggle, a completed
+     * transaction on one sub-device also flipped the IN toggle of the other sub-devices' auto-toggle
+     * endpoints (seen on the VS11K33A, hub layout), and the next report repeated the last toggle and was
+     * discarded by the host. OUT: the interrupt takes a packet only with bUXS_TOG_OK; a packet without it
+     * repeats the previous one (its ACK was lost) and is dropped (USB 2.0 8.6.4, WCH's CompatibilityHID.C). */
 
     D0_EP0RES = UEP_R_RES_ACK | UEP_T_RES_NAK;  /* toggle bits cleared (DATA0) */
     D0_EP_MOD = bUX_DEV_EN;
@@ -78,19 +79,19 @@ void USB_EP_init( void )
 
 #ifdef USE_D0_EP1_OUT
     D0_EP_MOD |= bUX_EP1O_EN;
-    D0_EP1RES = bUEP_X_AUTO_TOG | UEP_X_RES_ACK;  /* toggle bit cleared (DATA0), ACK ready to receive */
+    D0_EP1RES = UEP_X_RES_ACK;  /* toggle bit cleared (DATA0), ACK ready to receive */
 #endif
 #ifdef USE_D0_EP2_OUT
     D0_EP_MOD |= bUX_EP2O_EN;
-    D0_EP2RES = bUEP_X_AUTO_TOG | UEP_X_RES_ACK;
+    D0_EP2RES = UEP_X_RES_ACK;
 #endif
 #ifdef USE_D0_EP3_OUT
     D0_EP_MOD |= bUX_EP3O_EN;
-    D0_EP3RES = bUEP_X_AUTO_TOG | UEP_X_RES_ACK; 
+    D0_EP3RES = UEP_X_RES_ACK; 
 #endif
 #ifdef USE_D0_EP4_OUT
     D0_EP_MOD |= bUX_EP4O_EN;
-    D0_EP4RES = bUEP_X_AUTO_TOG | UEP_X_RES_ACK; 
+    D0_EP4RES = UEP_X_RES_ACK; 
 #endif
 
 
@@ -258,33 +259,49 @@ USB_DevIntNext:
 #ifdef USE_D0_EP4_OUT
 			case UXS_TOKEN_OUT | 4:  
 				/*  endpoint 4# download */
-				if( D0_STATUS & bUXS_TOG_OK ) 
-				D0_EP4RES = D0_EP4RES & ~MASK_UEP_X_RES | UEP_X_RES_NAK; 		/* Pause download */
-				ep4_data_wait = 0x01;
+				if( D0_STATUS & bUXS_TOG_OK )
+				{
+					/* a new packet; without bUXS_TOG_OK it repeats the previous one and is dropped */
+					D0_EP4RES ^= bUEP_X_TOG;
+					D0_EP4RES = D0_EP4RES & ~MASK_UEP_X_RES | UEP_X_RES_NAK; 		/* Pause download */
+					ep4_data_wait = 0x01;
+				}
                 break; 
 #endif
 #ifdef USE_D0_EP3_OUT
 			case UXS_TOKEN_OUT | 3:  
 				/*  endpoint 3# download */
-				if( D0_STATUS & bUXS_TOG_OK ) 
-				D0_EP3RES = D0_EP3RES & ~MASK_UEP_X_RES | UEP_X_RES_NAK; 		/* Pause download */
-				ep3_data_wait = 0x01;
+				if( D0_STATUS & bUXS_TOG_OK )
+				{
+					/* a new packet; without bUXS_TOG_OK it repeats the previous one and is dropped */
+					D0_EP3RES ^= bUEP_X_TOG;
+					D0_EP3RES = D0_EP3RES & ~MASK_UEP_X_RES | UEP_X_RES_NAK; 		/* Pause download */
+					ep3_data_wait = 0x01;
+				}
                 break; 
 #endif
 #ifdef USE_D0_EP2_OUT
 			case UXS_TOKEN_OUT | 2:  
 				/*  endpoint 2# download */
-				if( D0_STATUS & bUXS_TOG_OK ) 
-				D0_EP2RES = D0_EP2RES & ~MASK_UEP_X_RES | UEP_X_RES_NAK; 		/* Pause download */
-				ep2_data_wait = 0x01;
+				if( D0_STATUS & bUXS_TOG_OK )
+				{
+					/* a new packet; without bUXS_TOG_OK it repeats the previous one and is dropped */
+					D0_EP2RES ^= bUEP_X_TOG;
+					D0_EP2RES = D0_EP2RES & ~MASK_UEP_X_RES | UEP_X_RES_NAK; 		/* Pause download */
+					ep2_data_wait = 0x01;
+				}
                 break; 
 #endif
 #ifdef USE_D0_EP1_OUT
 			case UXS_TOKEN_OUT | 1:  
 				/*  endpoint 1# download */
-				if( D0_STATUS & bUXS_TOG_OK ) 
-				D0_EP1RES = D0_EP1RES & ~MASK_UEP_X_RES | UEP_X_RES_NAK; 		/* Pause download */
-				ep1_data_wait = 0x01;
+				if( D0_STATUS & bUXS_TOG_OK )
+				{
+					/* a new packet; without bUXS_TOG_OK it repeats the previous one and is dropped */
+					D0_EP1RES ^= bUEP_X_TOG;
+					D0_EP1RES = D0_EP1RES & ~MASK_UEP_X_RES | UEP_X_RES_NAK; 		/* Pause download */
+					ep1_data_wait = 0x01;
+				}
                 break; 
 #endif
                           
