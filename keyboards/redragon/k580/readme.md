@@ -101,8 +101,10 @@ On the tested keyboard, a restore of firmware 1.04 gave a full 64 KB read-back i
 
 - Layer 0: the printed layout. Media keys: previous, play/pause, next. Roller: volume; the roller toggle key
   switches it to key LED brightness and back (volume after power-up).
-- Layer 1 (Fn): Fn+Esc enters the bootloader (`QK_BOOT`). Fn+Win toggles Win Lock, which blocks both Win keys and
-  lights the Win Lock LED. Win Lock is off after power-up.
+- Layer 1 (Fn): Fn+Esc enters the bootloader (`QK_BOOT`). Fn+F1–F12 send the functions printed on the keycaps:
+  media player, volume down, volume up, mute, stop, previous, play/pause, next, mail, browser home, calculator,
+  search. Fn+Win toggles Win Lock, which blocks both Win keys and lights the Win Lock LED. Win Lock is off after
+  power-up.
 - G1–G5 and Rec: F13–F17 and F18, for shortcuts set in the operating system.
 - Lighting ([led_fx.c](led_fx.c)): two zones with separate settings, the keys and the side lights. Fn plus the
   keys below steps a setting; with Shift held it steps back. The settings return to the defaults at power-off.

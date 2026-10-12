@@ -22,11 +22,13 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_LCTL,  KC_LGUI,  KC_LALT, 	KC_SPC,  	KC_RALT, 	MO(1),   	KC_APP,   	KC_RCTL,  KC_LEFT,  KC_DOWN,  KC_RIGHT, KC_P0, 	  KC_PDOT, 	KC_P1,  	KC_P2,    KC_P3,      KC_PENT,
         /* row 6 — G1-G5 and Rec send F13-F18 (bind them in the OS), roller toggle, media keys */
                                                                     KC_F13,   KC_F14,   KC_F15,    KC_F16,  KC_F17,   KC_F18,   U_ROLL,   KC_MPRV, KC_MPLY, KC_MNXT),
-	/* Fn layer: Fn+Esc = bootloader, Fn+Win = Win Lock. Lighting (Shift reverses): Ins/G1 mode, Home/G2
-	 * hue, PgUp/G3 saturation, Del/G4 brightness, End/G5 speed, PgDn/Rec on/off; Ins-PgDn for the
-	 * keys, G1-Rec for the side lights. */
+	/* Fn layer: Fn+Esc = bootloader, Fn+F1-F12 = the functions printed on the keycaps (media player,
+	 * volume down/up, mute, stop, previous, play/pause, next, mail, browser home, calculator, search),
+	 * Fn+Win = Win Lock. Lighting (Shift reverses): Ins/G1 mode, Home/G2 hue, PgUp/G3 saturation,
+	 * Del/G4 brightness, End/G5 speed, PgDn/Rec on/off; Ins-PgDn for the keys, G1-Rec for the side
+	 * lights. */
 	[1] = LAYOUT_default(
-        QK_BOOT, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
+        QK_BOOT, KC_MSEL, KC_VOLD, KC_VOLU, KC_MUTE, KC_MSTP, KC_MPRV, KC_MPLY, KC_MNXT, KC_MAIL, KC_WHOM, KC_CALC, KC_WSCH, _______, _______, _______, _______, _______,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, U_KMODE, U_KHUE,  U_KSAT,  _______,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, U_KVAL,  U_KSPD,  U_KTOG,  _______,
         _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
