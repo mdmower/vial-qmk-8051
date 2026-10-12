@@ -49,6 +49,15 @@ typedef struct {
 #define KEYLOC_ENCODER_CW 253
 #define KEYLOC_ENCODER_CCW 252
 
+#ifdef __SDCC
+/* SDCC emits a copy of every static inline function in each file that includes this header, used or not:
+ * macros instead. */
+#    define IS_NOEVENT(event) ((event).type == TICK_EVENT)
+#    define IS_EVENT(event) ((event).type != TICK_EVENT)
+#    define IS_KEYEVENT(event) ((event).type == KEY_EVENT)
+#    define IS_COMBOEVENT(event) ((event).type == COMBO_EVENT)
+#    define IS_ENCODEREVENT(event) ((event).type == ENCODER_CW_EVENT || (event).type == ENCODER_CCW_EVENT)
+#else
 static inline bool IS_NOEVENT(const keyevent_t event) {
     return event.type == TICK_EVENT;
 }
@@ -64,6 +73,7 @@ static inline bool IS_COMBOEVENT(const keyevent_t event) {
 static inline bool IS_ENCODEREVENT(const keyevent_t event) {
     return event.type == ENCODER_CW_EVENT || event.type == ENCODER_CCW_EVENT;
 }
+#endif
 //inline bool IS_NOEVENT(const keyevent_t event) ;
 //inline bool IS_EVENT(const keyevent_t event) ;
 //inline bool IS_KEYEVENT(const keyevent_t event) ;
