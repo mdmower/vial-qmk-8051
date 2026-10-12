@@ -70,7 +70,6 @@ typedef struct {
     USB_Descriptor_Endpoint_t  Shared_INEndpoint;
 #endif
 
-#ifndef QMK_MCU_CH555
 #ifdef RAW_ENABLE
     // Raw HID Interface
     USB_Descriptor_Interface_t Raw_Interface;
@@ -78,7 +77,6 @@ typedef struct {
     USB_Descriptor_Endpoint_t  Raw_INEndpoint;
     USB_Descriptor_Endpoint_t  Raw_OUTEndpoint;
 #endif
-#endif /* !QMK_MCU_CH555 */
 
 #if defined(MOUSE_ENABLE) && !defined(MOUSE_SHARED_EP)
     // Mouse HID Interface
@@ -87,7 +85,6 @@ typedef struct {
     USB_Descriptor_Endpoint_t  Mouse_INEndpoint;
 #endif
 
-#ifndef QMK_MCU_CH555
 #if defined(SHARED_EP_ENABLE) && !defined(KEYBOARD_SHARED_EP)
     // Shared Interface
     USB_Descriptor_Interface_t Shared_Interface;
@@ -102,7 +99,6 @@ typedef struct {
     USB_Descriptor_Endpoint_t  Console_INEndpoint;
     USB_Descriptor_Endpoint_t  Console_OUTEndpoint;
 #endif
-#endif /* !QMK_MCU_CH555 */
 
 #ifdef MIDI_ENABLE
     USB_Descriptor_Interface_Association_t Audio_Interface_Association;
@@ -150,54 +146,6 @@ typedef struct {
     USB_Descriptor_Endpoint_t  Digitizer_INEndpoint;
 #endif
 } USB_Descriptor_Configuration_t;
-
-typedef struct {
-    USB_Descriptor_Configuration_Header_t Config;
-#ifdef SHARED_EP_ENABLE
-    USB_Descriptor_Interface_t Shared_Interface;
-    USB_HID_Descriptor_HID_t   Shared_HID;
-    USB_Descriptor_Endpoint_t  Shared_INEndpoint;
-#endif
-} ATTR_PACKED USB_Descriptor_Configuration_D1_t;
-
-typedef struct {
-    USB_Descriptor_Configuration_Header_t Config;
-
-#ifdef RAW_ENABLE
-    // Raw HID Interface
-    USB_Descriptor_Interface_t Raw_Interface;
-    USB_HID_Descriptor_HID_t   Raw_HID;
-    USB_Descriptor_Endpoint_t  Raw_INEndpoint;
-    USB_Descriptor_Endpoint_t  Raw_OUTEndpoint;
-#endif
-
-#ifdef CONSOLE_ENABLE
-    // Console HID Interface
-    USB_Descriptor_Interface_t Console_Interface;
-    USB_HID_Descriptor_HID_t   Console_HID;
-    USB_Descriptor_Endpoint_t  Console_INEndpoint;
-    USB_Descriptor_Endpoint_t  Console_OUTEndpoint;
-#endif
-} ATTR_PACKED USB_Descriptor_Configuration_D2_t;
-
-// Hub Descriptor (Type 0x29)
-typedef struct {
-    uint8_t  bDescLength;
-    uint8_t  bDescriptorType;
-    uint8_t  bNbrPorts;
-    uint16_t wHubCharacteristics;
-    uint8_t  bPwrOn2PwrGood;
-    uint8_t  bHubContrCurrent;
-    uint8_t  DeviceRemovable;
-    uint8_t  PortPwrCtrlMask;
-} ATTR_PACKED USB_Descriptor_Hub_t;
-
-typedef struct {
-    USB_Descriptor_Configuration_Header_t Config;
-    USB_Descriptor_Interface_t            Hub_Interface;
-    USB_Descriptor_Endpoint_t             Hub_INEndpoint;
-} ATTR_PACKED USB_Descriptor_Hub_Configuration_t;
-
 
 /*
  * Interface indexes
@@ -346,20 +294,17 @@ enum usb_endpoints {
 #    define MOUSE_IN_EPNUM SHARED_IN_EPNUM
 #endif
 
+/* Not EP4 OUT: its buffer is the upper half of EP0's, which the 64-byte control endpoint uses. */
 #ifdef RAW_ENABLE
 #define    RAW_IN_EPNUM 5
-#define    RAW_OUT_EPNUM 4
+#define    RAW_OUT_EPNUM 3
 #endif
 
 #ifdef SHARED_EP_ENABLE
 #define    SHARED_IN_EPNUM 2
 #endif
 
-// TODO put console, midi and cdc endpoints to Device1 of ch555
-#ifdef CONSOLE_ENABLE
-#   define CONSOLE_IN_EPNUM 6
-#   define CONSOLE_OUT_EPNUM 3
-#endif
+// Console, MIDI and virtual serial are not implemented (ch555_usb_stack.c)
 
 //    MIDI_STREAM_IN_EPNUM ,
 //#        define MIDI_STREAM_OUT_EPNUM MIDI_STREAM_IN_EPNUM
@@ -444,32 +389,6 @@ extern const uint8_t ConsoleReport_size;
 extern const USB_Descriptor_Device_t PROGMEM DeviceDescriptor;
 extern const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor;
 
-#ifdef SHARED_EP_ENABLE
-extern const USB_Descriptor_Configuration_D1_t PROGMEM ConfigurationDescriptor_D1;
-#endif
-
-#if defined(RAW_ENABLE) || defined(CONSOLE_ENABLE)
-extern const USB_Descriptor_Configuration_D2_t PROGMEM ConfigurationDescriptor_D2;
-
-/* D2 interface/endpoint numbering — shared between usb_descriptor.c and usb_device.c */
-#  ifdef RAW_ENABLE
-#    define D2_RAW_INTERFACE_NUM  0
-#    define D2_RAW_EPNUM          1  /* EP1 IN  (device→host) */
-#    define D2_RAW_OUT_EPNUM      2  /* EP2 OUT (host→device) */
-#    ifdef CONSOLE_ENABLE
-#      define D2_CONSOLE_INTERFACE_NUM 1
-#      define D2_CONSOLE_EPNUM         3
-#      define D2_TOTAL_INTERFACES      2
-#    else
-#      define D2_TOTAL_INTERFACES      1
-#    endif
-#  else /* CONSOLE_ENABLE only */
-#    define D2_CONSOLE_INTERFACE_NUM 0
-#    define D2_CONSOLE_EPNUM         1
-#    define D2_TOTAL_INTERFACES      1
-#  endif
-#endif
-
 #ifdef __SDCC
 /*
  * String descriptor with 16-bit characters. LUFA's USB_Descriptor_String_t has a wchar_t array when ARCH is
@@ -490,9 +409,5 @@ extern const usb_string_descriptor_t PROGMEM ProductString;
 #if defined(SERIAL_NUMBER)
 extern const usb_string_descriptor_t PROGMEM SerialNumberString;
 #endif
-
-extern const USB_Descriptor_Device_t PROGMEM HubDeviceDescriptor;
-extern const USB_Descriptor_Hub_Configuration_t PROGMEM HubConfigurationDescriptor;
-extern const USB_Descriptor_Hub_t PROGMEM HubDescriptor;
 
 uint16_t get_usb_descriptor(const uint16_t wValue, const uint16_t wIndex, const uint16_t wLength, const void** const DescriptorAddress);

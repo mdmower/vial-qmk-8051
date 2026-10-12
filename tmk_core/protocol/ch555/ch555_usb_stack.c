@@ -17,9 +17,7 @@
  * QMK host driver and protocol_* hooks for the CH555 USB device (usb_device.c).
  *
  * send_report(ep, ...) and read_EP(ep, ...) call send_report_EP<ep>() and read_EP<ep>(), with the QMK
- * endpoint numbers of usb_descriptor.h. The shared and raw HID endpoints are not on sub-device D0
- * (usb_device.h): send_report_EP2 (SHARED_IN_EPNUM) sends on D1 EP1 IN, send_report_EP5 (RAW_IN_EPNUM)
- * on D2 EP1 IN, and read_EP4 (RAW_OUT_EPNUM) reads D2 EP2 OUT.
+ * endpoint numbers of usb_descriptor.h: EP1 keyboard, EP2 shared (NKRO, extra keys), EP5 and EP3 raw HID.
  */
 
 #define send_report(endpoint, report, size) _send_report_EP(endpoint, report, size)
@@ -73,8 +71,8 @@ static void    send_mouse(report_mouse_t *report);
 static void    send_extra(report_extra_t *report);
 host_driver_t  ch555_usb_stack_driver = {keyboard_leds, send_keyboard, send_mouse, send_extra};
 
-#ifdef USE_D1_EP1_IN
-/* The shared endpoint (D1 EP1 IN) holds one report until the host reads it. A report that finds
+#ifdef USE_D0_EP2_IN
+/* The shared endpoint (EP2 IN) holds one report until the host reads it. A report that finds
  * it busy is kept here, the latest one per report ID, and sent from protocol_post_task(). */
 static report_keyboard_t nkro_pending;
 static bool              nkro_pending_set = false;
@@ -106,29 +104,15 @@ void send_report_EP1(void *report, size_t size) {
 }
 #endif
 #ifdef USE_D0_EP2_IN
-void send_report_EP2(void *report, size_t size) {
-    if (!USB_EnumStatus) return;
-    if (USB_SleepStatus == 0x03) USB_WakeUp_PC();
-    uint8_t timeout = 255;
-    while (timeout-- && ((D0_EP2RES & MASK_UEP_X_RES) == UEP_X_RES_ACK)) {
-        wait_us(40);
-    }
-    if ((D0_EP2RES & MASK_UEP_X_RES) == UEP_X_RES_ACK) return;
-    memcpy(pUSB_BUF_DEV0 + UX_EP2_ADDR, (uint8_t *)report, size);
-    D0_EP2T_L = size;
-    D0_EP2RES = D0_EP2RES & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
-}
-#endif
-#ifdef USE_D1_EP1_IN
-/* Shared endpoint (NKRO, extra keys) on D1 EP1 IN. Does not wait: returns false if the endpoint still
- * holds the previous report. */
+/* Shared endpoint (NKRO, extra keys). Does not wait: returns false if the endpoint still holds the
+ * previous report. */
 bool send_report_EP2(void *report, size_t size) {
     if (!USB_EnumStatus) return false;
     if (USB_SleepStatus == 0x03) USB_WakeUp_PC();
-    if ((D1_EP1RES & MASK_UEP_X_RES) == UEP_X_RES_ACK) return false;
-    memcpy(pUSB_BUF_DEV1 + UX_EP1_ADDR, (uint8_t *)report, size);
-    D1_EP1T_L = size;
-    D1_EP1RES = D1_EP1RES & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
+    if ((D0_EP2RES & MASK_UEP_X_RES) == UEP_X_RES_ACK) return false;
+    memcpy(pUSB_BUF_DEV0 + UX_EP2_ADDR, (uint8_t *)report, size);
+    D0_EP2T_L = size;
+    D0_EP2RES = D0_EP2RES & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
     return true;
 }
 #endif
@@ -180,21 +164,6 @@ void send_report_EP5(void *report, size_t size) {
     D0_EP5RES = D0_EP5RES & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
 }
 #endif
-#ifdef USE_D2_EP1_IN
-/* Raw HID on D2 EP1 IN */
-void send_report_EP5(void *report, size_t size) {
-    if (!USB_EnumStatus) return;
-    if (USB_SleepStatus == 0x03) USB_WakeUp_PC();
-    uint8_t timeout = 255;
-    while (timeout-- && ((D2_EP1RES & MASK_UEP_X_RES) == UEP_X_RES_ACK)) {
-        wait_us(40);
-    }
-    if ((D2_EP1RES & MASK_UEP_X_RES) == UEP_X_RES_ACK) return;
-    memcpy(pUSB_BUF_DEV2 + UX_EP1_ADDR, (uint8_t *)report, size);
-    D2_EP1T_L = size;
-    D2_EP1RES = D2_EP1RES & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
-}
-#endif
 
 /* An OUT endpoint answers NAK from the packet's arrival (USB interrupt) until it is read here. */
 #ifdef USE_D0_EP1_OUT
@@ -236,18 +205,6 @@ bool read_EP4(void *report, size_t size) {
         ep4_data_wait = 0;
         memcpy(report, pUSB_BUF_DEV0 + UX_EP4_ADDR, size);
         D0_EP4RES = D0_EP4RES & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
-        return true;
-    }
-    return false;
-}
-#endif
-#ifdef USE_D2_EP2_OUT
-/* Raw HID on D2 EP2 OUT */
-bool read_EP4(void *report, size_t size) {
-    if (ep_d2ep2_data_wait) {
-        ep_d2ep2_data_wait = 0;
-        memcpy(report, pUSB_BUF_DEV2 + UX_EP2_ADDR, size);
-        D2_EP2RES = D2_EP2RES & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
         return true;
     }
     return false;
@@ -300,7 +257,7 @@ static void send_keyboard(report_keyboard_t *report) {
 #ifdef NKRO_ENABLE
         if (1 /* TEMPFIX: hardcode nkro on until EEPROM is implemented */ || keymap_config.nkro) {
             size = sizeof(struct nkro_report);
-#    ifdef USE_D1_EP1_IN
+#    ifdef USE_D0_EP2_IN
             nkro_pending_set = !send_report(SHARED_IN_EPNUM, report, size);
             if (nkro_pending_set) {
                 memcpy(&nkro_pending, report, size);
@@ -327,7 +284,7 @@ static void send_mouse(report_mouse_t *report) {
 
 static void send_extra(report_extra_t *report) {
 #ifdef EXTRAKEY_ENABLE
-#    ifdef USE_D1_EP1_IN
+#    ifdef USE_D0_EP2_IN
     uint8_t i = (report->report_id == REPORT_ID_CONSUMER) ? 1 : 0;
     extra_pending_set[i] = !send_report(SHARED_IN_EPNUM, report, sizeof(report_extra_t));
     if (extra_pending_set[i]) {
@@ -339,7 +296,7 @@ static void send_extra(report_extra_t *report) {
 #endif
 }
 
-#ifdef USE_D1_EP1_IN
+#ifdef USE_D0_EP2_IN
 /* Send one report kept in nkro_pending or extra_pending, if the shared endpoint is free. */
 static void send_pending_shared_report(void) {
     uint8_t i;
@@ -472,7 +429,7 @@ void protocol_post_task(void) {
         led_set(keyboard_led_state);
     }
 
-#ifdef USE_D1_EP1_IN
+#ifdef USE_D0_EP2_IN
     send_pending_shared_report();
 #endif
 

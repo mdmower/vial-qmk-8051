@@ -84,20 +84,6 @@
 #define USE_D0_EP4_OUT
 #endif
 
-/* CH555 severance: reroute SHARED→D1 EP1, RAW→D2 EP1 IN / D2 EP2 OUT */
-#ifdef QMK_MCU_CH555
-#  ifdef SHARED_EP_ENABLE
-#    undef  USE_D0_EP2_IN
-#    define USE_D1_EP1_IN
-#  endif
-#  ifdef RAW_ENABLE
-#    undef  USE_D0_EP5_IN
-#    undef  USE_D0_EP4_OUT
-#    define USE_D2_EP1_IN
-#    define USE_D2_EP2_OUT
-#  endif
-#endif
-
 /************************************************/
 /* Hid type request */ 
 #define DEF_USB_GET_REPORT         0x01           								/* get report */
@@ -133,9 +119,6 @@ extern volatile UINT8  ep3_data_wait;											/* endpoint 3 data waiting flag*
 #endif
 #ifdef USE_D0_EP4_OUT
 extern volatile UINT8  ep4_data_wait;											/* endpoint 4 data waiting flag*/
-#endif
-#ifdef USE_D2_EP2_OUT
-extern volatile UINT8  ep_d2ep2_data_wait;										/* D2 endpoint 2 OUT data waiting flag */
 #endif
 /***********************************************************************************************************************/
 /* Function expansion */

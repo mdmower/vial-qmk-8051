@@ -52,11 +52,12 @@ Not implemented:
 - Vial: it did not work in the original port, and this branch has no Vial keymap.
 
 Other limits:
-- About 15.3 KB of the application region (0x2800–0xEFBF, 51,136 bytes) is free.
+- About 19.5 KB of the application region (0x2800–0xEFBF, 51,136 bytes) is free.
 - To save flash, the K580 build turns off tap and one-shot keys, `send_string`, Grave Escape and the magic-key
   swap settings; the list is at the end of
   [keyboards/redragon/k580/rules.mk](keyboards/redragon/k580/rules.mk).
-- QMK enumerates as a USB hub (`3938:1195`) with three devices: boot keyboard, media keys and NKRO keyboard.
+- QMK enumerates as one USB device (`3938:1195`) with three HID interfaces: boot keyboard, raw HID, and NKRO
+  keyboard with system and media keys.
 - The backup and flash tools (`util/k580_dump.py`, `util/evision_flash.py`) run on Linux only.
 - Other K580 revisions may use a different MCU; one keyboard database lists the K580 with a Sonix SN32F248B.
   [keyboards/redragon/k580/readme.md](keyboards/redragon/k580/readme.md) describes how to check a keyboard
