@@ -1027,8 +1027,9 @@ USB_DevIntNext:
 				USB_EnumStatus = 0x01;
 			}
         }
+		/* No D0_STATUS write (WCH's example has one): it would clear a D0 completion that arrived during this
+		 * pass, and that completion would not be handled. The check at the end starts another pass for it. */
 		USB_IF = bUX_IF_SUSPEND;
-		D0_STATUS = 0;
     }
 	else if(us & bUX_IF_BUS_RST) 
     {
@@ -1062,15 +1063,6 @@ USB_DevIntNext:
 #endif
 
         USB_IF = bUX_IF_BUS_RST;
-	}
-	else
-    {
-    	/*It is an interrupt that does not need to be processed. Clear it directly.*/
-        //print("@\n");
-		//printf("%x\n",us);
-		//printf("%x\n",D0_STATUS);
-		//printf("%x\n",SP);
-        D0_STATUS = 0;
 	}
   	
   	/* Determine again whether there are still USB interrupts that need to be processed */
