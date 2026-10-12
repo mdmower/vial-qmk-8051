@@ -18,7 +18,7 @@ enum { MODE_STATIC, MODE_RAINBOW, MODE_RAINBOW_REV, MODE_WAVE, MODE_WAVE_REV, MO
 #define F_BREATHE 0x08 // brightness changes with time
 
 static __code const uint8_t mode_flags[MODES]   = {0, F_POS, F_POS | F_REV, F_POS | F_MOVE, F_POS | F_REV | F_MOVE, F_MOVE, F_BREATHE};
-static __code const uint8_t setting_steps[]     = {MODES, HUE_STEPS, 5, 8, 5}; // mode, hue, sat, val, speed
+static __code const uint8_t setting_steps[]     = {MODES, HUE_STEPS, 5, 8, 5, 2}; // mode, hue, sat, val, speed, on
 static __code const uint8_t sat_table[5]        = {0, 96, 160, 208, 255};
 static __code const uint8_t val_table[8]        = {8, 16, 32, 64, 96, 144, 200, 255};
 /* Phase advance per pass (one pass per LED frame, ~12.7 ms), in 1/256: one cycle takes 26, 13, 6.5,
@@ -183,6 +183,30 @@ static void render_com(uint8_t c) {
         p[1] = rgb[0];
         p[2] = rgb[1];
         p[3] = rgb[2];
+    }
+}
+
+void led_fx_load(__code const uint8_t *p) {
+    __xdata uint8_t *v = &settings[0][0];
+    uint8_t          i, s = 0;
+
+    for (i = 0; i < sizeof(settings); i++) {
+        if (p[i] < setting_steps[s]) {
+            v[i] = p[i];
+        }
+        if (++s == LED_FX_SETTINGS) {
+            s = 0;
+        }
+    }
+    fx_valid = 0;
+}
+
+void led_fx_save(__xdata uint8_t *dst) {
+    __xdata uint8_t *v = &settings[0][0];
+    uint8_t          i;
+
+    for (i = 0; i < sizeof(settings); i++) {
+        dst[i] = v[i];
     }
 }
 

@@ -1,6 +1,7 @@
 #include QMK_KEYBOARD_H
 #include "led_dma.h"
 #include "led_fx.h"
+#include "flash_store.h"
 
 // Custom keycodes: Win Lock; roller toggle key and roller turns; lighting settings, keys then side lights in led_fx.h order
 enum {
@@ -42,10 +43,33 @@ static bool win_lock = false;
 /* The roller toggle key switches the roller between volume and key LED brightness. */
 static bool roller_light = false;
 
+/* Settings saved in the data flash SAVE_DELAY after the last change: the lighting settings (led_fx.c),
+ * then the roller mode (1 = key LED brightness). */
+#define SAVE_DELAY 3000 // ms
+static uint16_t save_time;
+static bool     save_pending = false;
+
+static void settings_changed(void) {
+    save_pending = true;
+    save_time    = timer_read();
+}
+
+static void settings_task(void) {
+    __xdata uint8_t rec[LED_FX_SAVE_SIZE + 1];
+
+    if (save_pending && timer_elapsed(save_time) >= SAVE_DELAY) {
+        save_pending = false;
+        led_fx_save(rec);
+        rec[LED_FX_SAVE_SIZE] = roller_light;
+        flash_store_save(rec, sizeof(rec));
+    }
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if (keycode >= U_KMODE && keycode <= U_STOG) {
         if (record->event.pressed) {
             led_fx_adjust(keycode - U_KMODE, get_mods() & MOD_MASK_SHIFT);
+            settings_changed();
         }
         return false;
     }
@@ -53,6 +77,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     case U_ROLL:
         if (record->event.pressed) {
             roller_light = !roller_light;
+            settings_changed();
         }
         return false;
     case U_RLDN:
@@ -60,6 +85,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         if (roller_light) {
             if (record->event.pressed) {
                 led_fx_adjust(LED_FX_VAL, keycode == U_RLDN);
+                settings_changed();
             }
         } else if (record->event.pressed) {
             register_code(keycode == U_RLDN ? KC_VOLD : KC_VOLU);
@@ -93,6 +119,12 @@ void keyboard_post_init_user(void) {
     writePinLow(PORT5_4);
     setPinOutput(LED_WIN_LOCK_PIN);
     writePinLow(LED_WIN_LOCK_PIN);
+
+    __code const uint8_t *p = flash_store_find();
+    if (p) {
+        led_fx_load(p);
+        roller_light = p[LED_FX_SAVE_SIZE] == 1;
+    }
 }
 /* Indicator LEDs and key LEDs off while the host is suspended (stock 1.04 @0x794f) */
 void suspend_power_down_user(void) {
@@ -105,6 +137,7 @@ void suspend_wakeup_init_user(void) {
 }
 void housekeeping_task_user(void) {
     led_fx_task();
+    settings_task();
 }
 
 bool pre_process_record_user(uint16_t keycode, keyrecord_t *record) { return true; }

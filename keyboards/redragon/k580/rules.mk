@@ -5,6 +5,9 @@ ENCODER_ENABLE = yes
 CUSTOM_MATRIX = lite
 SRC += led_dma.c led_fx.c matrix.c
 OPT_DEFS += -DCH555_LED_DMA_ENABLE
+# Lighting settings saved in the data flash (flash_store.c)
+SRC += flash_store.c
+CH555_DATA_FLASH_ENABLE = yes
 ENCODER_MAP_ENABLE = yes
 
 
