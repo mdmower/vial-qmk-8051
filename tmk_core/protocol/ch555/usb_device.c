@@ -623,21 +623,22 @@ USB_DevIntNext:
 								/* configuration 0 returns the device to the Address state (USB 2.0 9.4.7): no reports until
 								 * the host configures it again */
 								USB_EnumStatus = D0UsbConfig ? 0x01 : 0x00;
-								/* the host restarts every endpoint at DATA0 */
+								/* the host restarts every endpoint at DATA0; an IN endpoint goes to NAK, so that a report
+								 * still waiting in it from the previous configuration is not read in the new one */
 #ifdef USE_D0_EP1_IN
-								D0_EP1RES &= ~bUEP_X_TOG;
+								D0_EP1RES = UEP_X_RES_NAK;
 #endif
 #ifdef USE_D0_EP2_IN
-								D0_EP2RES &= ~bUEP_X_TOG;
+								D0_EP2RES = UEP_X_RES_NAK;
 #endif
 #ifdef USE_D0_EP3_IN
-								D0_EP3RES &= ~bUEP_X_TOG;
+								D0_EP3RES = UEP_X_RES_NAK;
 #endif
 #ifdef USE_D0_EP3_OUT
 								D0_EP3RES &= ~bUEP_X_TOG;
 #endif
 #ifdef USE_D0_EP5_IN
-								D0_EP5RES &= ~bUEP_X_TOG;
+								D0_EP5RES = UEP_X_RES_NAK;
 #endif
 								break;			
 																
