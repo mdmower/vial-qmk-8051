@@ -193,6 +193,14 @@ MCS51_ISR( USB_DeviceInterrupt, INT_NO_USB )
 	UINT16 len;
 
 USB_DevIntNext:
+	/* A SETUP ends any control transfer and a STALL of EP0 (USB 2.0 8.5.3.4), but EP0 keeps its previous response
+	 * (STALL, or ACK with the previous length and data) until it is written. Answer NAK from here until the request
+	 * is decoded and its reply loaded. First thing in the pass: the host's IN can follow its SETUP within about
+	 * 2 us. */
+	if( D0_STATUS & bUXS_SETUP_ACT )
+	{
+		D0_EP0RES = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_NAK | UEP_T_RES_NAK;
+	}
 	us = USB_IF; 
 	if( us & ( bUX_IF_D0_TRANS | bUX_IF_BUS_RST ) )
 	{
@@ -382,9 +390,8 @@ USB_DevIntNext:
 						/* not a SETUP: a completion without a case above */
 						break;
 					}
-					/* endpoint 0# SETUP */
+					/* endpoint 0# SETUP (EP0 answers NAK since the start of this pass) */
 					len = 0;  														/* Defaults to success and uploading 0 length */ 
-					D0_EP0RES = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_ACK | UEP_T_RES_ACK;
 
 					D0SetupLen = pD0_SETUP_REQ->wLengthL + ( (UINT16)pD0_SETUP_REQ->wLengthH << 8 );
 					D0SetupReqCode = pD0_SETUP_REQ->bRequest;
