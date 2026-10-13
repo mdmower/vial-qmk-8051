@@ -364,31 +364,10 @@ void protocol_pre_init(void) {
     println("done init usb");
 }
 
+/* The main loop does not wait for the host: until SET_CONFIGURATION the send functions drop reports (EP2 keeps
+ * the latest one per report ID), and an IN endpoint answers NAK until it holds a report. */
 void protocol_post_init(void) {
     host_set_driver(&ch555_usb_stack_driver);
-
-    /* Wait up to 5 s for the host to configure D0 (USB_EnumStatus is set by its SET_CONFIGURATION). */
-    {
-        uint16_t timeout = 5000;
-        while (!USB_EnumStatus && timeout) {
-            wait_ms(1);
-            timeout--;
-        }
-    }
-
-#ifdef USE_D0_EP1_IN
-    /* Send an initial empty keyboard report on EP1 immediately.
-     * Windows' HidUsb driver has a ~500ms timeout for the first
-     * interrupt IN response after SET_CONFIGURATION. If EP1 stays
-     * in NAK (because keyboard_task hasn't run yet to detect any
-     * key changes), Windows aborts the pipe and reports Code 43.
-     * Pre-loading an empty report ensures Windows gets data in time.
-     */
-    if (USB_EnumStatus) {
-        static const uint8_t empty_report[8] = {0};
-        send_report_EP1((void *)empty_report, 8);
-    }
-#endif
 }
 
 #ifndef USB_RESUME_DELAY_MS
