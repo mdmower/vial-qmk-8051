@@ -85,43 +85,47 @@ void CfgFsys(void)
 * Input          : n
 * Return         : None
 *******************************************************************************/ 
-void mDelayuS(UINT16 n)  
+/* CH555 core cycles: NOP 1; DJNZ Rn 6 when it branches, 2 when it does not. One pass of the loop below, MDELAYUS_NOPS
+ * NOPs and a DJNZ r6 that branches, takes FREQ_SYS / 1000000 cycles = 1 us. Every 256th pass takes 2 cycles more (DJNZ
+ * r6 does not branch, DJNZ r7 does). Interrupts that run during the loop lengthen the delay. */
+#define MDELAYUS_NOP2  "nop\n nop\n"
+#define MDELAYUS_NOP8  MDELAYUS_NOP2 MDELAYUS_NOP2 MDELAYUS_NOP2 MDELAYUS_NOP2
+#if FREQ_SYS == 48000000
+#define MDELAYUS_NOPS  MDELAYUS_NOP8 MDELAYUS_NOP8 MDELAYUS_NOP8 MDELAYUS_NOP8 MDELAYUS_NOP8 MDELAYUS_NOP2  /* 42 */
+#elif FREQ_SYS == 32000000
+#define MDELAYUS_NOPS  MDELAYUS_NOP8 MDELAYUS_NOP8 MDELAYUS_NOP8 MDELAYUS_NOP2                              /* 26 */
+#elif FREQ_SYS == 24000000
+#define MDELAYUS_NOPS  MDELAYUS_NOP8 MDELAYUS_NOP8 MDELAYUS_NOP2                                            /* 18 */
+#elif FREQ_SYS == 16000000
+#define MDELAYUS_NOPS  MDELAYUS_NOP8 MDELAYUS_NOP2                                                          /* 10 */
+#elif FREQ_SYS == 12000000
+#define MDELAYUS_NOPS  MDELAYUS_NOP2 MDELAYUS_NOP2 MDELAYUS_NOP2                                            /* 6 */
+#else
+#error "mDelayuS: no loop for this FREQ_SYS"
+#endif
+
+void mDelayuS(UINT16 n) __naked
 {
-#ifdef	FREQ_SYS
-#if		FREQ_SYS <= 6000000
-		n >>= 2;
-#endif
-#if		FREQ_SYS <= 3000000
-		n >>= 2;
-#endif
-#if		FREQ_SYS <= 750000
-		n >>= 4;
-#endif
-#endif
-	while(n){  // total = 12~13 Fsys cycles, 1uS @Fsys=12MHz
-		++ SAFE_MOD;  // 2 Fsys cycles, for higher Fsys, add operation here
-#ifdef	FREQ_SYS
-#if		FREQ_SYS >= 14000000
-		++ SAFE_MOD;
-#endif
-#if		FREQ_SYS >= 16000000
-		++ SAFE_MOD;
-#endif
-#if		FREQ_SYS >= 18000000
-		++ SAFE_MOD;
-#endif
-#if		FREQ_SYS >= 20000000
-		++ SAFE_MOD;
-#endif
-#if		FREQ_SYS >= 22000000
-		++ SAFE_MOD;
-#endif
-#if		FREQ_SYS >= 24000000
-		++ SAFE_MOD;
-#endif
-#endif
-		-- n;
-	}
+	(void)n;                    /* in DPL (low byte) and DPH */
+	/* SDCC saves no registers around a call of a naked function defined in the same file (mDelaymS) */
+	__asm__("push ar6");
+	__asm__("push ar7");
+	__asm__("mov  a,dpl");
+	__asm__("mov  r6,a");
+	__asm__("orl  a,dph");
+	__asm__("jz   00002$");     /* n = 0 */
+	__asm__("mov  r7,dph");
+	__asm__("mov  a,r6");
+	__asm__("jz   00001$");
+	__asm__("inc  r7");         /* low byte not 0: the first r6 round has that many passes, the others 256 */
+	__asm__("00001$:");
+	__asm__(MDELAYUS_NOPS);
+	__asm__("djnz r6,00001$");
+	__asm__("djnz r7,00001$");
+	__asm__("00002$:");
+	__asm__("pop  ar7");
+	__asm__("pop  ar6");
+	__asm__("ret");
 }
 
 /*******************************************************************************

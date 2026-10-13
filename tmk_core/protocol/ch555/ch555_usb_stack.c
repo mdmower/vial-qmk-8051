@@ -353,7 +353,6 @@ void send_digitizer(report_digitizer_t *report) {
  ******************************************************************************/
 static void setup_mcu(void) {
     CfgFsys();
-    wait_ms(10); // wait for the clock to settle
 #ifndef NO_PRINT
     mInitSTDIO();
     println("init UART0 done");

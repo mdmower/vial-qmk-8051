@@ -17,19 +17,9 @@
 
 #include "hal.h"
 
-// TODO optimize all these shits
-#define wait_ms(ms)                         \
-    do {                                    \
-        for (uint16_t i = ms; i > 0; i--) { \
-            mDelaymS(1);                      \
-        }                                   \
-    } while (0)
-#define wait_us(us)                         \
-    do {                                    \
-        for (uint16_t i = us; i > 0; i--) { \
-            mDelayuS(1);                      \
-        }                                   \
-    } while (0)
+/* at least ms milliseconds or us microseconds, up to 65535 */
+#define wait_ms(ms) mDelaymS(ms)
+#define wait_us(us) mDelayuS(us)
 #define wait_cpuclock(n)                    \
     do {                                    \
         for (uint16_t i = n; i > 0; i--) {  \
