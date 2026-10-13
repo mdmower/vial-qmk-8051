@@ -15,6 +15,7 @@
 #include "usb_device.h"
 #include "suspend.h"
 #include "report.h"
+#include "mcs51_isr.h"
 
 /******************************************************************************/
 /* constant variable definition */
@@ -186,7 +187,7 @@ void USB_Device_Init( void )
 *******************************************************************************/ 
 #pragma save
 #pragma nooverlay
-void USB_DeviceInterrupt( void ) __interrupt(INT_NO_USB) //__using(1)
+MCS51_ISR( USB_DeviceInterrupt, INT_NO_USB )
 {
     UINT8  save = USB_IE;
     USB_IE = 0;

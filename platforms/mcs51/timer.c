@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //#include <stdint.h>
 #include "timer.h"
 #include "print.h"
+#include "mcs51_isr.h"
 //#include "atomic_util.h"
 //#include "hal.h" 
 
@@ -120,7 +121,7 @@ inline uint32_t timer_elapsed32(uint32_t last) {
 
 // excecuted once per 1ms.(excess for just timer count?)
 //volatile uint32_t s_tik = 1;
-void Timer0_ISR(void) __interrupt (INT_NO_TMR0) {
+MCS51_ISR(Timer0_ISR, INT_NO_TMR0) {
     //TR0 = 0;
     setTimer0Mode1Val(F_CPU/12/1000);
     //TR0 = 1; not stopping timer might makes it more precise, probably?

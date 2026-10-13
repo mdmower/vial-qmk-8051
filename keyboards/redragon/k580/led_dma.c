@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include "led_dma.h"
+#include "mcs51_isr.h"
 
 /* LED_COMMON value of each COM, in key matrix column order (stock 1.04 table @0x3027) */
 static __code const uint8_t com_select[LED_DMA_COMS] = {
@@ -73,7 +74,7 @@ static void led_dma_load(void) __naked {
  * Runs at the start of each inhibition period between COMs (stock 1.04 @0x7edf): selects the
  * next COM, loads its LED data, then reads the key rows on P4 with that COM driven low.
  */
-void led_dma_isr(void) __interrupt(INT_NO_PWM_I2C) {
+MCS51_ISR(led_dma_isr, INT_NO_PWM_I2C) {
     __data uint8_t com = led_com;
     __data uint8_t rows;
 
