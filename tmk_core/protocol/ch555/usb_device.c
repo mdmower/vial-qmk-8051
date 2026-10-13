@@ -148,7 +148,11 @@ void USB_Device_Init( void )
 
 	/* Initialize usb related registers */
 	IE_USB = 0;                              // usb interrupt dissable, avoid acidental interrupt during init
-	IP_EX &= ~bIP_USB;                       // set usb interrupt priority to high
+	/* USB interrupt at high priority (datasheet 9: a bit set in IP/IP_EX = high), so that it does not wait for
+	 * the LED and Timer0 handlers: after a STALL, EP0 answers STALL until the next SETUP has been decoded. Under
+	 * the OEM bootloader this needs handlers that end with RET (mcs51_isr.h): with a RETI in the handler, the
+	 * stub's own RETI would end the low-priority interrupt that this one preempted. */
+	IP_EX |= bIP_USB;
     
 	//SAFE_MOD = 0x55;
 	//SAFE_MOD = 0xAA;
