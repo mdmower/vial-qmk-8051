@@ -232,13 +232,11 @@ USB_DevIntNext:
 			{
 				case USB_GET_DESCRIPTOR:
 				{
-					/* SDCC/8051: pD0Descr is __code space. memcpy() with a generic
-					 * pointer silently reads from the wrong address space after the
-					 * first 64-byte chunk. Use an explicit byte loop instead. */
+					/* next chunk of the descriptor; pD0Descr points into code memory */
 					UINT8 i;
 					len = D0SetupLen >= DEF_ENDP0_SIZE ? DEF_ENDP0_SIZE : D0SetupLen;
 					for( i = 0; i < len; i++ ) {
-						pD0_EP0_BUF[i] = pD0Descr[i];   /* __code read — correct on SDCC */
+						pD0_EP0_BUF[i] = pD0Descr[i];
 					}
 					D0SetupLen -= len;
 					pD0Descr   += len;
@@ -504,7 +502,7 @@ USB_DevIntNext:
                     break;
 #endif
 											default:
-												// Unsupported string descriptor 
+												// no HID descriptor for this interface
 												len = 0xFFFF;  
 												break;
 										}
@@ -564,7 +562,7 @@ USB_DevIntNext:
                                                 break;
 #endif
 											default:
-												// Unsupported string descriptor 
+												// no report descriptor for this interface
 												len = 0xFFFF;  
 												break;
 										}
@@ -582,7 +580,7 @@ USB_DevIntNext:
 									//	break;
 									//	
 									default:
-										// Unsupported string descriptor 
+										// unsupported descriptor type
 										len = 0xFFFF; 
 										break;
 								} 
@@ -606,7 +604,7 @@ USB_DevIntNext:
 									len = D0SetupLen >= DEF_ENDP0_SIZE ? DEF_ENDP0_SIZE : D0SetupLen;  /* The length of this transmission */
 									D0SetupLen -= len;
 									for( i = 0; i < len; i++ ) {
-										pD0_EP0_BUF[i] = pD0Descr[i];   /* __code read — completely safe & reentrant */
+										pD0_EP0_BUF[i] = pD0Descr[i];
 									}
 									pD0Descr += len;
 								}
@@ -1009,13 +1007,8 @@ USB_DevIntNext:
 					
 					if( len == 0xFFFF ) 
 					{  
-						/* Operation failed — STALL endpoint 0.
-						 * CH555 hardware may not auto-clear STALL when the next
-						 * SETUP packet arrives (unlike standard USB controllers).
-						 * We must manually clear it after a brief delay to ensure
-						 * the host sees the STALL response but EP0 is ready for
-						 * the next SETUP. Without this, Windows gives Code 43.
-						 */
+						/* Request not supported: STALL the data and status stages. The next SETUP ends the STALL
+						 * (USB 2.0 8.5.3.4); the pass that handles it sets EP0 to NAK first (USB_DevIntNext). */
 						D0SetupReqCode = 0xFF;
 						D0_EP0RES = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_STALL | UEP_T_RES_STALL;
 					}
@@ -1041,26 +1034,17 @@ USB_DevIntNext:
     	/* Suspend or wake up events */	
 		if( us & bUX_SUSPEND )
 		{       
-			/* Bus suspend detected (no SOF for >3ms) */
+			/* Bus suspend: no bus activity for 4-6 ms (datasheet, Tusp). USB_EnumStatus is kept: the
+			 * configuration lasts through a suspend (USB 2.0 9.1.1.6). */
 			/* The MCU stays awake: WCH's sleep routine (CH55X_Sleep_Deal, removed) switched the D+ pull-up from
 			 * 1.5k to 7.5k, which Windows took for a disconnect (connect/disconnect loop, Code 43). */
 			USB_SleepStatus |= 0x02;
-			/* NOTE: We no longer clear USB_EnumStatus here.
-			 * The old code cleared it on every suspend that wasn't 0x03,
-			 * which included the brief suspend during initial enumeration.
-			 * This caused the device to think it wasn't enumerated even
-			 * after SET_CONFIGURATION, leading to failed enumeration on
-			 * Windows and intermittent failures on Linux.
-			 */
 		}
 		else
-		{                      
-			/* Wake event (SOF resumed) */
+		{
+			/* Bus activity resumed */
 			USB_SleepStatus &= ~0x02;
-			/* Only restore USB_EnumStatus if we were previously configured.
-			 * Don't unconditionally set it to 1 — that would allow sending
-			 * reports before the host has finished enumeration.
-			 */
+			/* USB_EnumStatus already equals ( D0UsbConfig != 0 ): SET_CONFIGURATION and the bus reset set both */
 			if( D0UsbConfig != 0 )
 			{
 				USB_EnumStatus = 0x01;
