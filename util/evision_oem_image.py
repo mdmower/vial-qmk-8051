@@ -52,7 +52,7 @@ def esc_check(base, cont):
     emit(0xC2, EA)                       # CLR EA
     # Save the mode registers changed below (restored before the jump to the app). At reset P4 is in
     # LED-drive mode, so key reads need P4_LED_KEY/P4_MOD_OC = 0xFF first (K580 1.04 firmware @0x7955,
-    # CH55X_Sleep_Deal in tmk_core/protocol/ch555/usb_device.c).
+    # WCH's sleep routine CH55X_Sleep_Deal, removed from tmk_core/protocol/ch555/usb_device.c).
     # (Mode registers only: reading P0/P4 returns pin levels, not the latch, so latches aren't saved;
     # the P4.0 latch is set to 1, and P0.0 is set to 1 again, its reset value.)
     for rn, sfr in enumerate((P4_LED_KEY, P4_MOD_OC, P0_MOD_OC, P0_DIR_PU)):

@@ -447,15 +447,4 @@ void protocol_post_task(void) {
 #ifdef USE_D0_EP2_IN
     send_pending_shared_report();
 #endif
-
-    if (MCU_Sleep_Operate) {
-        EA                = 0;
-        MCU_Sleep_Operate = 0;
-        SAFE_MOD          = 0x55;
-        SAFE_MOD          = 0xAA;
-        WAKE_CTRL |= bWAK_BY_USB; /* Wake up when there is signal from Usb */
-        SAFE_MOD = 0x00;
-        CH55X_Sleep_Deal(); /* Execute microcontroller sleep operation */
-        EA = 1;
-    }
 }

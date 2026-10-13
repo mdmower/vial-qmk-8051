@@ -30,10 +30,8 @@ volatile UINT8  KB_USB_SetReport = 0x00;										/* */
 
 volatile UINT8  USB_EnumStatus = 0x00;											/* USB enumeration status */	
 volatile UINT8  USB_SleepStatus = 0x00;											/* USB sleep state */		
-volatile UINT8  MCU_Sleep_Operate = 0x00;										/* Mcu sleep operation flag */
 volatile UINT8  USB_WakeUpSent = 0x00;											/* remote wakeup signalled, no host transfer since */
 
-volatile UINT8  KB_USB_UpStatus = 0x00;											/* endpoint 1 busy flag*/
 #ifdef USE_D0_EP1_OUT
 volatile UINT8  ep1_data_wait   = 0x00;											/* endpoint 1 data waiting flag*/
 #endif
@@ -129,9 +127,7 @@ void USB_Device_Init( void )
 	D0UsbConfig = 0x00;															/* USB configuration flags */
 	USB_EnumStatus = 0x00;														/* USB enumeration status */	
 	USB_SleepStatus = 0x00;														/* USB sleep state */		
-	MCU_Sleep_Operate = 0x00;													/* Mcu sleep operation flag */
 	USB_WakeUpSent = 0x00;														/* remote wakeup signalled, no host transfer since */
-	KB_USB_UpStatus = 0x00;														/* Usb keyboard and mouse upload status */
 #ifdef USE_D0_EP1_OUT
 	ep1_data_wait   = 0x00;														/* Usb keyboard and mouse upload status */
 #endif
@@ -193,8 +189,6 @@ void USB_Device_Init( void )
 #pragma nooverlay
 MCS51_ISR( USB_DeviceInterrupt, INT_NO_USB )
 {
-    UINT8  save = USB_IE;
-    USB_IE = 0;
     UINT8  us,i;
 	UINT16 len;
 
@@ -347,7 +341,6 @@ USB_DevIntNext:
             	/* endpoint 1# upload completed */
                 D0_EP1RES ^= bUEP_X_TOG;
                 D0_EP1RES = D0_EP1RES & ~MASK_UEP_X_RES | UEP_X_RES_NAK; 		/* Pause upload */
-				KB_USB_UpStatus = 0x01;
                 break;
 #endif
                
@@ -630,7 +623,6 @@ USB_DevIntNext:
 								/* configuration 0 returns the device to the Address state (USB 2.0 9.4.7): no reports until
 								 * the host configures it again */
 								USB_EnumStatus = D0UsbConfig ? 0x01 : 0x00;
-								KB_USB_UpStatus = 0x01;
 								/* the host restarts every endpoint at DATA0 */
 #ifdef USE_D0_EP1_IN
 								D0_EP1RES &= ~bUEP_X_TOG;
@@ -1042,17 +1034,9 @@ USB_DevIntNext:
 		if( us & bUX_SUSPEND )
 		{       
 			/* Bus suspend detected (no SOF for >3ms) */
+			/* The MCU stays awake: WCH's sleep routine (CH55X_Sleep_Deal, removed) switched the D+ pull-up from
+			 * 1.5k to 7.5k, which Windows took for a disconnect (connect/disconnect loop, Code 43). */
 			USB_SleepStatus |= 0x02;
-			if( USB_SleepStatus == 0x03 )
-			{
-				/* Host explicitly requested suspend AND bus is suspended.
-				 * DISABLED: CH55X_Sleep_Deal() drops the D+ pull-up from
-				 * 1.5k to 7.5k, which Windows interprets as a physical
-				 * disconnect, causing a connect/disconnect loop + Code 43.
-				 * Safe to disable for a wired keyboard (no battery).
-				 */
-				// MCU_Sleep_Operate = 0x01;
-			}
 			/* NOTE: We no longer clear USB_EnumStatus here.
 			 * The old code cleared it on every suspend that wasn't 0x03,
 			 * which included the brief suspend during initial enumeration.
@@ -1090,7 +1074,6 @@ USB_DevIntNext:
         USB_IE = bUX_IE_SUSPEND | bUX_IE_TRANSFER | bUX_IE_BUS_RST;
 
 		/* Fully reset all state variables */
-        KB_USB_UpStatus = 0x00;
 		USB_EnumStatus = 0x00;
 		D0UsbConfig = 0x00;								 /* Not yet configured */
 		D0SetupReqCode = 0xFF;							 /* No pending request */
@@ -1118,7 +1101,6 @@ USB_DevIntNext:
 	{
 		goto USB_DevIntNext;
 	}    
-    USB_IE = save;
 }
 #pragma restore
 
@@ -1153,56 +1135,5 @@ void USB_WakeUp_PC( void )
 	/* QMK option: pause so that hubs, KVM switches and monitors can settle after the wakeup */
 	mDelaymS( USB_SUSPEND_WAKEUP_DELAY );
 #endif
-}
-
-/*******************************************************************************
-* Function Name  : CH55X_Sleep_Deal
-* Description    : Ch55x microcontroller sleep processing
-* Input          : None
-* Output         : None
-* Return         : None
-*******************************************************************************/ 
-void CH55X_Sleep_Deal( void )	
-{
-	UINT8	savePortCfg;
-
-	P4_LED_KEY = 0xFF;															/* enable key mode */
-    P4_MOD_OC = 0xFF;															/* disable push-pull output */
-    //LED_CTRL &= ~bLED_EN;
-																				/* P4_DIR_PU = 0xFF; */																						
-	P0 = P3 = 0;																/* COMMON all low to support any key wakeup */
-	P7 &= ~0x03;																/* P7 &= ~ 0x03, if P7 used for COMMON  */ 
-	savePortCfg = PORT_CFG;
-	PORT_CFG |= bP4_IE_LEVEL;		/* enable P4 level change to wakeup, P4 input@pullup vs P4 output@0xFF, so low action */
-																				/* USB_CTRL = 0; */	
-	/* Before sleeping, switch the USB port pull-up resistor to 7 k5 */
-	P6_OUT_PU = ( 1 << 1 );
-	USB_CTRL &= ~bUX_DP_PU_EN;
-	P6_DIR = 0;
-	
-	PCON |= PD;																	/* sleep */
-		
-	mDelaymS( 1 ); 
-	USB_CTRL |= bUX_DP_PU_EN;
-	P6_OUT_PU = 0;
-
-	SAFE_MOD = 0x55;
-	SAFE_MOD = 0xAA;
-	WAKE_CTRL = 0x00;
-	SAFE_MOD = 0x00;
-    
-	PORT_CFG = savePortCfg;
-	if ( GPIO_IE & bIE_IO_EDGE ) 
-	{	
-		/* edge mode interrupt */
-		GPIO_IE &= ~ bIE_IO_EDGE;												/* clear P4 level change interrupt flag */
-		GPIO_IE |= bIE_IO_EDGE;	
-	}
-	mDelaymS( 5 );
-
-	P0 = P3 = 0xFF;  																							
-	//LED_CTRL = bLED_IE_INHIB | bLED_BLUE_EN | bLED_GREEN_EN | bLED_RED_EN | bLED_COM_AHEAD | bLED_PWM_INHIB | bLED_EN;
-	//LED_STATUS |= bLED_IF_SET;  												/* force bLED_IF to enter interrupt service */
-	//IE_PWM_I2C = 1;   
 }
 

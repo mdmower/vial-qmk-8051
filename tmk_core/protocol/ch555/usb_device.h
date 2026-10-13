@@ -103,10 +103,8 @@ extern volatile UINT8  D0UsbConfig;												/* USB configuration flags */
 
 extern volatile UINT8  USB_EnumStatus;											/* USB enumeration status */	
 extern volatile UINT8  USB_SleepStatus;											/* USB sleep state */	
-extern volatile UINT8  MCU_Sleep_Operate;										/* Mcu sleep operation flag */	
 extern volatile UINT8  USB_WakeUpSent;											/* remote wakeup signalled, no host transfer since */
 
-extern volatile UINT8  KB_USB_UpStatus;											/*  */
 extern volatile UINT8  KB_USB_SetReport;
 extern volatile UINT8  Report_Value;											/* HID protocol of interface 0: 0 boot, 1 report */
 #ifdef USE_D0_EP1_OUT
@@ -125,7 +123,6 @@ extern volatile UINT8  ep4_data_wait;											/* endpoint 4 data waiting flag*
 /* Function expansion */
 extern void USB_Device_Init( void );											/* CH55X USB device initialization */
 extern void USB_WakeUp_PC( void );												/* CH55X Usb device wakes up computer */	
-extern void CH55X_Sleep_Deal( void );											/* Ch55x microcontroller sleep processing */
 
 #pragma save
 #pragma nooverlay
