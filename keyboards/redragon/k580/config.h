@@ -36,6 +36,9 @@
 
 #define USB_MAX_POWER_CONSUMPTION 100
 
+/* NKRO report from startup; no EEPROM keeps the setting */
+#define FORCE_NKRO
+
 /* RGB Matrix */
 //#define RGB_MATRIX_LED_COUNT 104 /* 104 physical keys; DMA buffer is 18×6=108 internally */
 //#define RGB_MATRIX_MAXIMUM_BRIGHTNESS 200

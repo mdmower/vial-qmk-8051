@@ -262,7 +262,7 @@ static void send_keyboard(report_keyboard_t *report) {
         send_report(KEYBOARD_IN_EPNUM, &report->mods, 8);
     } else {
 #ifdef NKRO_ENABLE
-        if (1 /* TEMPFIX: hardcode nkro on until EEPROM is implemented */ || keymap_config.nkro) {
+        if (keymap_config.nkro) {
             size = sizeof(struct nkro_report);
 #    ifdef USE_D0_EP2_IN
             nkro_pending_set = !send_report(SHARED_IN_EPNUM, report, size);
@@ -366,9 +366,6 @@ void protocol_pre_init(void) {
 
 void protocol_post_init(void) {
     host_set_driver(&ch555_usb_stack_driver);
-#ifdef NKRO_ENABLE
-    keymap_config.nkro = 1; /* TEMPFIX: force NKRO on until EEPROM is implemented */
-#endif
 
     /* Wait up to 5 s for the host to configure D0 (USB_EnumStatus is set by its SET_CONFIGURATION). */
     {
@@ -392,8 +389,6 @@ void protocol_post_init(void) {
         send_report_EP1((void *)empty_report, 8);
     }
 #endif
-
-    P4_LED_KEY = 0xFF; /* enable key mode (switch PORT4 from LED to GPIO) */
 }
 
 #ifndef USB_RESUME_DELAY_MS

@@ -27,3 +27,6 @@
 //#define NO_ACTION_TAPPING
 
 #define HOLD_ON_OTHER_KEY_PRESS
+
+/* NKRO report from startup; the transient EEPROM does not keep the setting */
+#define FORCE_NKRO

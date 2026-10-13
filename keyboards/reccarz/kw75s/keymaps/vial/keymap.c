@@ -1,4 +1,5 @@
 #include QMK_KEYBOARD_H
+#include "ch555.h"
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
@@ -32,6 +33,7 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
 
 
 void keyboard_post_init_user(void) {
+  P4_LED_KEY = 0xFF; // P4 (key rows) from LED drive to GPIO
   // Customise these values to desired behaviour
   debug_enable=true;
   debug_matrix=true;
