@@ -10,9 +10,10 @@ also gets an Esc check that runs before the app:
   0x2800  LJMP to the Esc check
   check:  switch P4 to key-input mode (P4_LED_KEY/P4_MOD_OC = 0xFF; at reset P4 is in LED-drive mode),
           drive col 0 (P0.0) low push-pull, read row 0 (P4.0) = Esc;
-          if Esc is pressed for the whole ~10 ms sample window: erase the 64-byte marker page 0x27C0 and
-          do a software reset, so the board starts in the OEM bootloader (the same sequence as the K580
-          1.04 firmware's 04 EE EE handler @0xdb84);
+          if Esc is pressed in all 64 samples (estimated at 12 MHz, the reset clock, which the OEM
+          bootloader does not change: about 2.7 ms settle delay, then about 5.5 ms of samples):
+          erase the 64-byte marker page 0x27C0 and do a software reset, so the board starts in the OEM
+          bootloader (the same sequence as the K580 1.04 firmware's 04 EE EE handler @0xdb84);
           otherwise restore every SFR it changed and LJMP to the app entry.
 
 The check runs before any app code, so it also works when the app fails at startup. Its only flash

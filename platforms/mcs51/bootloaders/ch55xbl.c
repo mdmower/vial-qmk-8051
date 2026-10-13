@@ -20,15 +20,9 @@
 /*
  * bootloader_jump()
  * -----------------
- * Disables USB and all interrupts, waits ~100ms for the host to detect
- * disconnect, then jumps to the CH55x USB bootloader at 0xF400.
- *
- * Safety note: if the keyboard disconnects before flashing completes
- * (e.g. user closes the ISP tool), the CH55x bootloader has a built-in
- * ~30 second USB inactivity timeout. After that timeout it executes a
- * self-reset (bSW_RESET) and the keyboard reboots into normal firmware.
- * Nothing is lost because the firmware flash is only written atomically
- * at the end of the ISP session.
+ * Disables USB and all interrupts, waits for the host to detect the
+ * disconnect, then jumps to the WCH factory bootloader at BOOT_LOAD_ADDR
+ * (0xF400 on the CH555).
  *
  * With EVISION_OEM_BOOTLOADER defined, it instead erases the Evision OEM
  * bootloader's boot marker and resets (see below). That bootloader has no
@@ -96,11 +90,12 @@ void bootloader_jump(void) {
  * -----------
  * Performs a software reset of the CH555 by writing the magic sequence
  * into SAFE_MOD to enter safe mode, then setting the bSW_RESET bit in
- * GLOBAL_CFG. The chip resets immediately — execution does not return.
+ * GLOBAL_CFG. Execution does not return.
  *
- * Note: after a software reset, bBOOT_LOAD in GLOBAL_CFG will be 0,
- * meaning the bootloader will NOT run on next boot; the user firmware
- * starts directly. Use bootloader_jump() if you want to enter the ISP.
+ * After a software reset the CPU starts at address 0x0000 and bBOOT_LOAD
+ * is 0 (datasheet 7.3.3). With EVISION_OEM_BOOTLOADER, 0x0000 is the
+ * Evision OEM bootloader, which starts the app at 0x2800 while its boot
+ * marker at 0x27C0 is present.
  */
 void mcu_reset(void) {
     EA = 0;           /* disable all interrupts first */

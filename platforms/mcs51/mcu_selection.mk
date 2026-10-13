@@ -19,13 +19,14 @@ endif
 ifneq (,$(filter $(MCU),ch555))
 
   # Microcontroller Settings
-  XRAM_LOC   = 0x0100 #TODO pRAM is preserved for xSFR or smth, not sure
   # xRAM is 0x0000-0x1FFF, but the USB buffers are fixed at 0x1000-0x13FF (pUSB_BUF_DEV0 ..
   # pUSB_BUF_HUB in lib/ch555/ch555.h), so the linker only gets 0x0100-0x0FFF.
+  # Below 0x0100: with EVISION_OEM_BOOTLOADER, each interrupt stub of that bootloader stores
+  # 3 bytes in xdata between 0x0042 and 0x00FC. The xSFRs are at 0x2100-0x22FF, not here.
+  XRAM_LOC   = 0x0100
   XRAM_SIZE  = 0x0f00
   CODE_SIZE  = 0xf000
 
-  F_CPU      = 12000000
   F_CPU      = 24000000
  #F_USB = 48000000 
 
