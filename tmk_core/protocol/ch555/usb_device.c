@@ -991,10 +991,15 @@ USB_DevIntNext:
 								break;
 								
 							case DEF_USB_SET_PROTOCOL:							/* 0x0B: SET_PROTOCOL */
-								/* only the keyboard interface has a boot protocol; protocol_post_task() applies it */
+								/* HID 1.11 7.2.6: only a boot interface (the keyboard interface) has a protocol; STALL for
+								 * the others. protocol_post_task() applies it. */
 								if( pD0_SETUP_REQ->wIndexL == KEYBOARD_INTERFACE )
 								{
 									Report_Value = pD0_EP0_BUF[ 2 ];
+								}
+								else
+								{
+									len = 0xFFFF;
 								}
 								break;
 								
@@ -1004,8 +1009,16 @@ USB_DevIntNext:
 								break;
 
 							case DEF_USB_GET_PROTOCOL:							/* 0x03: GET_PROTOCOL */
-								pD0_EP0_BUF[ 0 ] = Report_Value;
-								len = 1;
+								/* HID 1.11 7.2.5: boot interfaces only, as SET_PROTOCOL */
+								if( pD0_SETUP_REQ->wIndexL == KEYBOARD_INTERFACE )
+								{
+									pD0_EP0_BUF[ 0 ] = Report_Value;
+									len = 1;
+								}
+								else
+								{
+									len = 0xFFFF;
+								}
 								break;
 								
 							default:
