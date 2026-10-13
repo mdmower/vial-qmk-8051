@@ -2,6 +2,7 @@
 
 #include "led_dma.h"
 #include "mcs51_isr.h"
+#include "usb_device.h"
 
 /* LED_COMMON value of each COM, in key matrix column order (stock 1.04 table @0x3027) */
 static __code const uint8_t com_select[LED_DMA_COMS] = {
@@ -83,9 +84,11 @@ MCS51_ISR(led_dma_isr, INT_NO_PWM_I2C) {
     }
     LED_COMMON = com_select[com]; // also clears bLED_IF
     /* Stock sets LED_DMA once per frame and lets it advance; here it is set for each COM, so that
-     * the LEDs can switch to led_dma_off at any COM. */
+     * the LEDs can switch to led_dma_off at any COM. They stay off while the device is not
+     * configured: USB 2.0 allows 100 mA before SET_CONFIGURATION, and the keyboard draws up to
+     * 420 mA with all LEDs at full white. */
     {
-        uint16_t addr = led_dark ? (uint16_t)led_dma_off : (uint16_t)led_dma_buf + ((uint16_t)com << 5);
+        uint16_t addr = (led_dark || !USB_EnumStatus) ? (uint16_t)led_dma_off : (uint16_t)led_dma_buf + ((uint16_t)com << 5);
         LED_DMA_H     = addr >> 8;
         LED_DMA_L     = addr & 0xFF;
     }
@@ -196,7 +199,8 @@ void led_dma_init(void) {
     LED_BLU_ADJ = 0;
 }
 
-/* LEDs on or off; the controller and the key scan keep running in both cases. */
+/* LEDs on or off; the controller and the key scan keep running in both cases. The LEDs are also
+ * off while the device is not configured (led_dma_isr). */
 void led_dma_output(bool on) {
     led_dark = !on;
 }

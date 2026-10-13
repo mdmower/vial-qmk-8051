@@ -34,7 +34,8 @@
 #define BOOTMAGIC_LITE_ROW 0
 #define BOOTMAGIC_LITE_COLUMN 0
 
-#define USB_MAX_POWER_CONSUMPTION 100
+/* bMaxPower; the keyboard draws up to 420 mA with all LEDs at full white */
+#define USB_MAX_POWER_CONSUMPTION 500
 
 /* NKRO report from startup; no EEPROM keeps the setting */
 #define FORCE_NKRO
