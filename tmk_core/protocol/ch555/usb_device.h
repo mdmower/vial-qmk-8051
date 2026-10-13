@@ -107,6 +107,8 @@ extern volatile UINT8  USB_WakeUpSent;											/* remote wakeup signalled, no 
 
 extern volatile UINT8  KB_USB_SetReport;
 extern volatile UINT8  Report_Value;											/* HID protocol of interface 0: 0 boot, 1 report */
+extern volatile UINT8  Idle_Value;												/* SET_IDLE duration of interface 0, 4 ms units */
+extern UINT8 kbd_report[8];														/* current report of interface 0 (ch555_usb_stack.c) */
 #ifdef USE_D0_EP1_OUT
 extern volatile UINT8  ep1_data_wait;											/* endpoint 1 data waiting flag*/
 #endif

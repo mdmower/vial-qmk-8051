@@ -46,6 +46,9 @@
 #if defined(CONSOLE_ENABLE) || defined(MIDI_ENABLE) || defined(VIRTSER_ENABLE)
 #    error "CONSOLE_ENABLE, MIDI_ENABLE and VIRTSER_ENABLE are not implemented in the CH555 protocol"
 #endif
+#ifdef KEYBOARD_SHARED_EP
+#    error "KEYBOARD_SHARED_EP is not implemented in the CH555 protocol: the keyboard interface uses EP1"
+#endif
 
 #ifdef NKRO_ENABLE
 #    include "keycode_config.h"
@@ -62,7 +65,13 @@ uint8_t keyboard_idle = 0;
 uint8_t        keyboard_protocol  = 1;
 static uint8_t keyboard_led_state = 0;
 
-static report_keyboard_t keyboard_report_sent;
+/* The current report of the keyboard interface (interface 0, EP1; 8 bytes without report ID in both protocols):
+ * the last one loaded into EP1, or one kept until EP1 is free and sent from protocol_post_task(). GET_REPORT
+ * (USB interrupt) answers it, and with a nonzero SET_IDLE duration it is sent again when that time has passed
+ * since the last report (HID 1.11 7.2.1, 7.2.4). */
+uint8_t         kbd_report[8];
+static bool     kbd_report_pending = false;
+static uint16_t kbd_report_time;
 
 /* Host driver */
 static uint8_t keyboard_leds(void);
@@ -94,20 +103,20 @@ static void wake_host(void) {
  * it back to NAK when the host has read it. */
 
 #ifdef USE_D0_EP1_IN
-void send_report_EP1(void *report, size_t size) {
-    if (!USB_EnumStatus) return;
-    wake_host();
-
-    // Check if write ready for a polling interval around 10ms
-    uint8_t timeout = 255;
-    while (timeout-- && ((D0_EP1RES & MASK_UEP_X_RES) == UEP_X_RES_ACK)) {
-        wait_us(40);
-    }
-    if ((D0_EP1RES & MASK_UEP_X_RES) == UEP_X_RES_ACK) return;
-
+/* Loads a report into EP1; returns false if the endpoint still holds the previous report. */
+static bool load_EP1(void *report, size_t size) {
+    if ((D0_EP1RES & MASK_UEP_X_RES) == UEP_X_RES_ACK) return false;
     memcpy(pUSB_BUF_DEV0 + UX_EP1_ADDR, (uint8_t *)report, size);
     D0_EP1T_L = size;
     D0_EP1RES = D0_EP1RES & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
+    return true;
+}
+
+/* Keyboard endpoint. Does not wait: returns false if the endpoint still holds the previous report. */
+bool send_report_EP1(void *report, size_t size) {
+    if (!USB_EnumStatus) return false;
+    wake_host();
+    return load_EP1(report, size);
 }
 #endif
 #ifdef USE_D0_EP2_IN
@@ -254,33 +263,34 @@ static uint8_t keyboard_leds(void) {
     return keyboard_led_state;
 }
 
-static void send_keyboard(report_keyboard_t *report) {
-    uint8_t size = KEYBOARD_REPORT_SIZE;
+/* Sends kbd_report on EP1, or keeps it for protocol_post_task() if EP1 still holds the previous report. */
+static void send_kbd_report(void) {
+    kbd_report_pending = !send_report(KEYBOARD_IN_EPNUM, kbd_report, 8);
+    if (!kbd_report_pending) {
+        kbd_report_time = timer_read();
+    }
+}
 
-    /* If we're in Boot Protocol, don't send any report ID or other funky fields */
-    if (!keyboard_protocol) {
-        send_report(KEYBOARD_IN_EPNUM, &report->mods, 8);
-    } else {
+static void send_keyboard(report_keyboard_t *report) {
 #ifdef NKRO_ENABLE
-        if (keymap_config.nkro) {
-            size = sizeof(struct nkro_report);
+    /* Report protocol with NKRO: the NKRO report on the shared endpoint */
+    if (keyboard_protocol && keymap_config.nkro) {
+        uint8_t size = sizeof(struct nkro_report);
 #    ifdef USE_D0_EP2_IN
-            nkro_pending_set = !send_report(SHARED_IN_EPNUM, report, size);
-            if (nkro_pending_set) {
-                memcpy(&nkro_pending, report, size);
-            }
-#    else
-            send_report(SHARED_IN_EPNUM, report, size);
-#    endif
-            keyboard_report_sent = *report;
-            return;
+        nkro_pending_set = !send_report(SHARED_IN_EPNUM, report, size);
+        if (nkro_pending_set) {
+            memcpy(&nkro_pending, report, size);
         }
+#    else
+        send_report(SHARED_IN_EPNUM, report, size);
+#    endif
+        return;
+    }
 #endif
 
-        send_report(KEYBOARD_IN_EPNUM, report, size);
-    }
-
-    keyboard_report_sent = *report;
+    /* Boot protocol, or report protocol without NKRO: mods, reserved byte and 6 keys on EP1 */
+    memcpy(kbd_report, &report->mods, 8);
+    send_kbd_report();
 }
 
 static void send_mouse(report_mouse_t *report) {
@@ -364,8 +374,8 @@ void protocol_pre_init(void) {
     println("done init usb");
 }
 
-/* The main loop does not wait for the host: until SET_CONFIGURATION the send functions drop reports (EP2 keeps
- * the latest one per report ID), and an IN endpoint answers NAK until it holds a report. */
+/* The main loop does not wait for the host: until SET_CONFIGURATION, EP1 keeps the latest keyboard report and EP2
+ * the latest one per report ID, raw HID reports are dropped, and an IN endpoint answers NAK until it holds a report. */
 void protocol_post_init(void) {
     host_set_driver(&ch555_usb_stack_driver);
 }
@@ -416,6 +426,17 @@ void protocol_post_task(void) {
     if (Report_Value != keyboard_protocol) {
         keyboard_protocol = Report_Value;
         clear_keyboard();
+    }
+
+    /* EP1: a kept report; otherwise, with a nonzero SET_IDLE duration (4 ms units), the current report again once
+     * that time has passed since the last report. The repeat does not signal remote wakeup. */
+    if (kbd_report_pending) {
+        send_kbd_report();
+    } else {
+        uint8_t idle = Idle_Value;
+        if (idle && USB_EnumStatus && timer_elapsed(kbd_report_time) >= (uint16_t)idle * 4 && load_EP1(kbd_report, 8)) {
+            kbd_report_time = timer_read();
+        }
     }
 
 #ifdef USE_D0_EP2_IN

@@ -25,7 +25,9 @@ volatile PUINT8C	pD0Descr;   /* points into __code Flash — MUST be PUINT8C on 
 
 volatile UINT8  D0UsbConfig = 0x00;												/* USB configuration flags - the Configuation Id selected */
 volatile UINT8  Report_Value = 0x01;                                            /* HID protocol of interface 0 (SET_PROTOCOL): 0 boot, 1 report (the default, HID 1.11 7.2.6) */
-volatile UINT8  Idle_Value = 0x00;                                              /* host request hid interface go idle */
+/* HID 1.11 7.2.4: recommended idle rate of a keyboard at initialization, 500 ms (4 ms units) */
+#define KEYBOARD_IDLE_DEFAULT 125
+volatile UINT8  Idle_Value = KEYBOARD_IDLE_DEFAULT;                             /* SET_IDLE duration of interface 0 (4 ms units, 0: report only on a change) */
 volatile UINT8  KB_USB_SetReport = 0x00;										/* */
 
 volatile UINT8  USB_EnumStatus = 0x00;											/* USB enumeration status */	
@@ -951,14 +953,23 @@ USB_DevIntNext:
 						switch( D0SetupReqCode )
 						{
 							case DEF_USB_GET_REPORT:								/* 0x01: GET_REPORT */
-								/* Windows sends GET_REPORT during HID initialization.
-								 * Return an empty keyboard report (8 bytes of zeros).
-								 * Without this, the device STALLs and Windows gives Code 43.
-								 */
+								/* HID 1.11 7.2.1: the input report (type 1) of the keyboard interface is its current report,
+								 * kbd_report. The main loop writes kbd_report with this interrupt enabled (while the interrupt
+								 * waits, EP0 still answers a previous STALL), so an answer during a key change can mix two
+								 * consecutive reports; the new report follows on EP1. Other reports: 8 zero bytes. */
 								{
 									UINT8 k;
-									for(k = 0; k < 8; k++) {
-										pD0_EP0_BUF[k] = 0;
+									if( pD0_SETUP_REQ->wIndexL == KEYBOARD_INTERFACE && pD0_SETUP_REQ->wValueH == 1 )
+									{
+										for(k = 0; k < 8; k++) {
+											pD0_EP0_BUF[k] = kbd_report[k];
+										}
+									}
+									else
+									{
+										for(k = 0; k < 8; k++) {
+											pD0_EP0_BUF[k] = 0;
+										}
 									}
 									len = 8;
 									if( D0SetupLen < len ) {
@@ -971,7 +982,12 @@ USB_DevIntNext:
 								break;
 							
 							case DEF_USB_SET_IDLE:								/* 0x0A: SET_IDLE */
-								Idle_Value = pD0_EP0_BUF[ 3 ];
+								/* duration in the high byte of wValue; only the keyboard interface repeats its report
+								 * (protocol_post_task()), the other interfaces report only on a change */
+								if( pD0_SETUP_REQ->wIndexL == KEYBOARD_INTERFACE )
+								{
+									Idle_Value = pD0_SETUP_REQ->wValueH;
+								}
 								break;
 								
 							case DEF_USB_SET_PROTOCOL:							/* 0x0B: SET_PROTOCOL */
@@ -983,7 +999,7 @@ USB_DevIntNext:
 								break;
 								
 							case DEF_USB_GET_IDLE:								/* 0x02: GET_IDLE */
-								pD0_EP0_BUF[ 0 ] = Idle_Value;
+								pD0_EP0_BUF[ 0 ] = ( pD0_SETUP_REQ->wIndexL == KEYBOARD_INTERFACE ) ? Idle_Value : 0;
 								len = 1;
 								break;
 
@@ -1071,6 +1087,7 @@ USB_DevIntNext:
 		D0SetupReqCode = 0xFF;							 /* No pending request */
 		D0SetupLen = 0x00;
 		Report_Value = 0x01;							 /* report protocol */
+		Idle_Value = KEYBOARD_IDLE_DEFAULT;
 		USB_SleepStatus = 0x00;							 /* Clear sleep state — fresh start */
 #ifdef USE_D0_EP1_OUT
 		ep1_data_wait = 0x00;
