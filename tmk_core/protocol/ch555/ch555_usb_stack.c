@@ -32,7 +32,6 @@
 #include "keyboard.h"
 #include "action.h"
 #include "led.h"
-#include "debug.h"
 #include "suspend.h"
 #include "wait.h"
 #include "timer.h"
@@ -355,7 +354,6 @@ static void setup_mcu(void) {
     CfgFsys();
 #ifndef NO_PRINT
     mInitSTDIO();
-    println("init UART0 done");
 #endif
 }
 
@@ -370,7 +368,6 @@ void protocol_setup(void) {
 
 void protocol_pre_init(void) {
     setup_usb();
-    println("done init usb");
 }
 
 /* The main loop does not wait for the host: until SET_CONFIGURATION, EP1 keeps the latest keyboard report and EP2

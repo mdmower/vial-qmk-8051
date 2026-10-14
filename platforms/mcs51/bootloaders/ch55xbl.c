@@ -80,7 +80,7 @@ void bootloader_jump(void) {
     while (1)
       ;
 #   else
-    // todo: not working well, CH549 doesn't support direct jump
+#       error "bootloader_jump() is not implemented for this MCU"
 #   endif
 #endif
 }

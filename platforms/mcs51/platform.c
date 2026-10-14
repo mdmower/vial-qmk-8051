@@ -16,6 +16,5 @@
 
 #include "platform_deps.h"
 
-void platform_setup(void) {
-    //TODO set clock here or in protocol init?
-}
+/* The clock is set in protocol_setup() (CfgFsys(), ch555_usb_stack.c), as LUFA sets the AVR clock prescaler there. */
+void platform_setup(void) {}

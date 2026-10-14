@@ -29,6 +29,5 @@
 #define println(s)  puts(s "\r\n")
 #define uprint(s)   puts(s)
 #define uprintln(s) puts(s "\r\n")
-//#define uprintf(fmt, ...) __xprintf(fmt), ##__VA_ARGS__
 #define uprintf     printf
 #define xprintf     printf

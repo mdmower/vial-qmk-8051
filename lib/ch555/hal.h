@@ -13,10 +13,8 @@
 #ifndef	__HAL_H__
 #define __HAL_H__
 
-//#include <absacc.h>
 #include <stdio.h>
 #include <string.h>
-//#include <intrins.h>
 #include "ch555.h"
 
 
@@ -36,29 +34,24 @@
 #ifndef  UART1_BAUD
 #define  UART1_BAUD                      115200
 #endif
-#ifndef  DE_PRINTF                                            //Debug print
-#define  DE_PRINTF                      1
-#endif
 #define UART1_PRINTF
 
 #ifndef MIN
 #define MIN(a,b)                (((a) <= (b)) ? (a) : (b))
 #endif
 
-void CfgFsys(void);                                           //CH5555Ê±ÖÓÑ¡ÔñºÍÅäÖĂ
+void CfgFsys(void);                                           //CH555 clock selection and configuration
 
-void mDelayuS(UINT16 n);                                 //̉ÔuSÎªµ¥Î»ÑÓÊ±
-void mDelaymS(UINT16 n);                                 //̉ÔmSÎªµ¥Î»ÑÓÊ±
+void mDelayuS(UINT16 n);                                      //delay in us
+void mDelaymS(UINT16 n);                                      //delay in ms
 
 #ifdef UART0_PRINTF
-void mInitSTDIO(void);                                        //T1×÷Îª²῭ØÂÊ·¢ÉúÆ÷
-void CH555UART0Alter(void);                                    //CH555´®¿Ú0̉ư½ÅÓ³Éäµ½P0.2/P0.3
-//void CH555UART0SendByte(UINT8 SendDat);                    //CH555UART0·¢ËÍ̉»¸ö×Ö½Ú
-//UINT8 CH555UART0RcvByte(void);                                //CH555UART0²éÑ¯·½Ê½½ÓÊỞ»¸ö×Ö½Ú
+void mInitSTDIO(void);                                        //UART0 init, Timer1 as the baud rate generator
+void CH555UART0Alter(void);                                   //UART0 pins mapped to P0.2/P0.3
 int putchar(int c);
 int getchar(void);
 #elif defined(UART1_PRINTF)
-void mInitSTDIO(void);                                        //T1×÷Îª²῭ØÂÊ·¢ÉúÆ÷
+void mInitSTDIO(void);                                        //UART1 init, baud rate from SBAUD1
 int putchar(int c);
 int getchar(void);
 #endif

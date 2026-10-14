@@ -15,22 +15,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-//#include <stdint.h>
 #include "timer.h"
-#include "print.h"
 #include "mcs51_isr.h"
-//#include "atomic_util.h"
-//#include "hal.h" 
 
 // counter resolution 1ms
-// NOTE: union { uint32_t timer32; struct { uint16_t dummy; uint16_t timer16; }}
-//__data volatile uint32_t timer_count;
 volatile uint32_t timer_count;
 
-/** \brief timer initialization
- *
- * FIXME: needs doc
- */
+/** \brief timer initialization */
 void timer_init(void) {
     // Set Timer0 clock = F_CPU/12
     T2MOD &= ~bT0_CLK;
@@ -46,23 +37,17 @@ void timer_init(void) {
 
     // Enable Timer0 Interrupt
     ET0 = 1;
-    EA  = 1; // golbal interrupt enable
+    EA  = 1; // global interrupt enable
 }
 
-/** \brief timer clear
- *
- * FIXME: needs doc
- */
+/** \brief timer clear */
 inline void timer_clear(void) {
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
         timer_count = 0;
     }
 }
 
-/** \brief timer read
- *
- * FIXME: needs doc
- */
+/** \brief timer read */
 inline uint16_t timer_read(void) {
     uint32_t t;
 
@@ -73,10 +58,7 @@ inline uint16_t timer_read(void) {
     return (t & 0xFFFF);
 }
 
-/** \brief timer read32
- *
- * FIXME: needs doc
- */
+/** \brief timer read32 */
 inline uint32_t timer_read32(void) {
     uint32_t t;
 
@@ -87,10 +69,7 @@ inline uint32_t timer_read32(void) {
     return t;
 }
 
-/** \brief timer elapsed
- *
- * FIXME: needs doc
- */
+/** \brief timer elapsed */
 inline uint16_t timer_elapsed(uint16_t last) {
     uint32_t t;
 
@@ -101,10 +80,7 @@ inline uint16_t timer_elapsed(uint16_t last) {
     return TIMER_DIFF_16((t & 0xFFFF), last);
 }
 
-/** \brief timer elapsed32
- *
- * FIXME: needs doc
- */
+/** \brief timer elapsed32 */
 inline uint32_t timer_elapsed32(uint32_t last) {
     uint32_t t;
 
@@ -115,18 +91,9 @@ inline uint32_t timer_elapsed32(uint32_t last) {
     return TIMER_DIFF_32(t, last);
 }
 
-// excecuted once per 1ms.(excess for just timer count?)
-//volatile uint32_t s_tik = 1;
+// Once per ms. Mode 1 does not reload by itself: the counts from the overflow to this reload are lost (8.6 per tick
+// measured at 24 MHz under the OEM bootloader), so a tick is slightly longer than 1 ms.
 MCS51_ISR(Timer0_ISR, INT_NO_TMR0) {
-    //TR0 = 0;
     setTimer0Mode1Val(F_CPU/12/1000);
-    //TR0 = 1; not stopping timer might makes it more precise, probably?
-
-    //static uint8_t bf, af;
-    //bf = timer_count & 0x00000100;
     timer_count++;
-    //af = timer_count & 0x00000100;
-    //if ( bf != af ) println("tik");
-    //s_tik++;
-    //if ( s_tik==0 ) println("tik");
 }

@@ -157,8 +157,8 @@ void CH555UART0Alter(void)
 * Function Name  : mInitSTDIO
 * Description    : Ch555 serial port 0 is initialized, 
 *                  t1 is used as the baud rate generator by default, t2 can also be used
-*                  -T1 acts as baud rate generator for uart0：RCLK=0 and TCLK=0
-*                  -T2 acts as baud rate generator for uart0：RCLK=1 or TCLK=1               
+*                  -T1 acts as baud rate generator for uart0: RCLK=0 and TCLK=0
+*                  -T2 acts as baud rate generator for uart0: RCLK=1 or TCLK=1               
 * Input          : None
 * Return         : None
 *******************************************************************************/
@@ -182,7 +182,7 @@ void mInitSTDIO(void)
 	x /= 10;
 	if(x2 >= 5) x++;                                                           //rounding
 
-	TMOD = TMOD & ~ bT1_GATE & ~ bT1_CT & ~ MASK_T1_MOD | bT1_M1;              //0X20，Timer1 as 8-bit auto-reload timer
+	TMOD = TMOD & ~ bT1_GATE & ~ bT1_CT & ~ MASK_T1_MOD | bT1_M1;              //0X20, Timer1 as 8-bit auto-reload timer
 	T2MOD = T2MOD | bTMR_CLK | bT1_CLK;                                        //Timer1 clock selection
 	TH1 = 0-x;                                                                 //12mhz crystal oscillator, buad/12 is the actual baud rate that needs to be set
 	TR1 = 1;                                                                   //Start timer 1
@@ -191,7 +191,7 @@ void mInitSTDIO(void)
 }
 
 /*******************************************************************************
-* Function Name  : CH555UART0RcvByte
+* Function Name  : getchar
 * Description    : Ch555 uart0 receives a byte
 * Input          : None
 * Return         : SBUF
@@ -203,9 +203,9 @@ int getchar(void) {
 }
 
 /*******************************************************************************
-* Function Name  : CH555UART0SendByte
+* Function Name  : putchar
 * Description    : Ch555 uart0 sends a byte
-* Input          : SendDat；data to send
+* Input          : c: data to send
 * Return         : None
 *******************************************************************************/
 int putchar(int c) {
@@ -227,8 +227,6 @@ void mInitSTDIO(void) {
   SCON1 &= ~bU1SM0;
   SCON1 |= bU1REN | bU1SMOD;
 
-  //SBAUD1 = 256 - F_CPU / 16 / UART1_BAUD;
-  //SBAUD1 = 0xf9;//for 115200 baud at 12MHz clk
 	UINT32 x;
 	UINT8 x2; 
 	x = 10 * FREQ_SYS / UART1_BAUD / 16;                                       //If you change the main frequency, be careful not to overflow the value of x                      
@@ -238,8 +236,6 @@ void mInitSTDIO(void) {
     SBAUD1 = 0 - x;
 
   SIF1 = bU1TI | bU1RI; // clear interrupt flags
-  //IE_UART1 = 1;
-  //EA = 1;
   CH555UART1Alter(); 
 }
 

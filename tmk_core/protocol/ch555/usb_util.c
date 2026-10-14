@@ -13,27 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <LUFA/Drivers/USB/USB.h>
 #include "usb_util.h"
-#include "wait.h"
 #include "usb_device.h"
 
-void usb_disconnect(void) {
-    //USB_Disable();TODO implement this
-    //USB_DeviceState = DEVICE_STATE_Unattached;TODO implement this
-}
+/* QMK calls usb_disconnect() and usb_connected_state() only for split keyboards (quantum/split_common), which have
+ * no transport driver on MCS51. */
+void usb_disconnect(void) {}
 
+/* Configured: SET_CONFIGURATION with a nonzero value (ChibiOS: USB_ACTIVE) */
 bool usb_connected_state(void) {
-    //return USB_Device_IsAddressSet(); TODO implement this
-    return (USB_EnumStatus != 0); 
+    return (USB_EnumStatus != 0);
 }
-
-#if defined(OTGPADE)
-bool usb_vbus_state(void) {
-    USB_OTGPAD_On(); // enables VBUS pad
-    wait_us(5);
-
-    return USB_VBUS_GetStatus(); // checks state of VBUS
-}
-#endif
-

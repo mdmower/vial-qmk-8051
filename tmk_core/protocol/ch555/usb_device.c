@@ -11,7 +11,6 @@
 /******************************************************************************/
 #include <string.h>
 #include "hal.h"
-#include "debug.h"
 #include "usb_device.h"
 #include "suspend.h"
 #include "report.h"
@@ -28,7 +27,7 @@ volatile UINT8  Report_Value = 0x01;                                            
 /* HID 1.11 7.2.4: recommended idle rate of a keyboard at initialization, 500 ms (4 ms units) */
 #define KEYBOARD_IDLE_DEFAULT 125
 volatile UINT8  Idle_Value = KEYBOARD_IDLE_DEFAULT;                             /* SET_IDLE duration of interface 0 (4 ms units, 0: report only on a change) */
-volatile UINT8  KB_USB_SetReport = 0x00;										/* */
+volatile UINT8  KB_USB_SetReport = 0x00;										/* LED output report (SET_REPORT) */
 
 volatile UINT8  USB_EnumStatus = 0x00;											/* USB enumeration status */	
 volatile UINT8  USB_SleepStatus = 0x00;											/* USB sleep state */		
@@ -73,7 +72,6 @@ static void D0SerialStringInit( void )
 }
 #endif
 
-//UINT8D  RGB_Mode = 0x00;
 void USB_EP_init( void )  
 {
     /* No bUEP_X_AUTO_TOG; the interrupt toggles every endpoint. IN: with the auto-toggle, a completed
@@ -157,13 +155,13 @@ void USB_Device_Init( void )
 	USB_SleepStatus = 0x00;														/* USB sleep state */		
 	USB_WakeUpSent = 0x00;														/* remote wakeup signalled, no host transfer since */
 #ifdef USE_D0_EP1_OUT
-	ep1_data_wait   = 0x00;														/* Usb keyboard and mouse upload status */
+	ep1_data_wait   = 0x00;
 #endif
 #ifdef USE_D0_EP2_OUT
-	ep2_data_wait   = 0x00;														/* Usb keyboard and mouse upload status */
+	ep2_data_wait   = 0x00;
 #endif
 #ifdef USE_D0_EP3_OUT
-	ep3_data_wait   = 0x00;														/* Usb keyboard and mouse upload status */
+	ep3_data_wait   = 0x00;
 #endif
 #ifdef USE_D0_EP4_OUT
 	ep4_data_wait   = 0x00;
@@ -180,10 +178,6 @@ void USB_Device_Init( void )
 	 * the OEM bootloader this needs handlers that end with RET (mcs51_isr.h): with a RETI in the handler, the
 	 * stub's own RETI would end the low-priority interrupt that this one preempted. */
 	IP_EX |= bIP_USB;
-    
-	//SAFE_MOD = 0x55;
-	//SAFE_MOD = 0xAA;
-	//GLOBAL_CFG |= bXIR_XSFR;               // use __pdata to access xSFR instead of pRAM        
 
 	SAFE_MOD = 0x55;
 	SAFE_MOD = 0xAA;
@@ -194,12 +188,6 @@ void USB_Device_Init( void )
 	USB_CTRL = 0;                            // clear reset
 
     USB_EP_init();                           // setup endpoints
-//	D0_EP0RES = UEP_R_RES_ACK | UEP_T_RES_NAK;
-//	D0_EP1RES = bUEP_X_AUTO_TOG | UEP_X_RES_NAK;
-//	D0_EP2RES = bUEP_X_AUTO_TOG | UEP_X_RES_ACK;
-//	D0_EP3RES = bUEP_X_AUTO_TOG | UEP_X_RES_NAK;
-	//D0_EP_MOD = bUX_EP3O_EN | bUX_DEV_EN; 
-	//D0_EP_MOD |= bUX_EP5I_EN;
 
 	D0_ADDR = 0;
 	HB_ADDR = 0x7F;             /* hub off: the controller passes everything to D0 (datasheet 16.1, WCH's examples) */
@@ -240,8 +228,6 @@ USB_DevIntNext:
 	}
 	if( us & bUX_IF_D0_TRANS )
 	{
-		//dprintf("%x\n",SP);
-		//dprint("d0tr");
 		/* D0 data transfer completed */
 		
 		/* A SETUP that arrives while another D0 completion is pending sets bUXS_SETUP_ACT and leaves MASK_UXS_TOKEN
@@ -489,7 +475,6 @@ USB_DevIntNext:
 										switch( pD0_SETUP_REQ->wIndexL )
 										{       
 											// Select interface 
-											//case 0:
 #ifndef KEYBOARD_SHARED_EP
 											case KEYBOARD_INTERFACE:
 												pD0Descr = (PUINT8C)( &ConfigurationDescriptor.Keyboard_HID );        
@@ -511,7 +496,6 @@ USB_DevIntNext:
 												break;
 #endif
 
-											//case 1:
 #ifdef RAW_ENABLE
 											case RAW_INTERFACE:
 												pD0Descr = (PUINT8C)( &ConfigurationDescriptor.Raw_HID );
@@ -549,7 +533,6 @@ USB_DevIntNext:
 										switch( pD0_SETUP_REQ->wIndexL )
 										{       
 											// Select interface 
-											//case 0:
 #ifndef KEYBOARD_SHARED_EP
 											case KEYBOARD_INTERFACE:
 												pD0Descr = (PUINT8C)( KeyboardReport );        
@@ -571,7 +554,6 @@ USB_DevIntNext:
 												break;
 #endif
 
-											//case 1:
 #ifdef RAW_ENABLE
 											case RAW_INTERFACE:
 												pD0Descr = (PUINT8C)( RawReport );
@@ -604,31 +586,11 @@ USB_DevIntNext:
 										}
 										break;
 										
-									//case 0x06:
-									//	pD0Descr = (PUINT8)( &My_QueDescr[ 0 ] );    								   
-									//	len = sizeof( My_QueDescr );
-									//	break;
-									//		
-									//case 0x07:	
-									//	memcpy( &USB_FS_OSC_DESC[ 2 ], &MyDevice_CfgDesc[ 2 ], sizeof( MyDevice_CfgDesc ) - 2 );
-									//	pD0Descr = (PUINT8)( &USB_FS_OSC_DESC[ 0 ] );    
-									//	len = sizeof( USB_FS_OSC_DESC );
-									//	break;
-									//	
 									default:
 										// unsupported descriptor type
 										len = 0xFFFF; 
 										break;
 								} 
-								//USB_Request_Header_t *pSetupReq;
-								//pSetupReq = (USB_Request_Header_t *)pD0_EP0_BUF;
-								//#define pSetupReq ((USB_Request_Header_t __xdata *)XSFR_USBD0_BASE)
-								//#define pSetupReq ((PXUSB_SETUP_REQ2)XSFR_USBD0_BASE)
-								//PXUSB_SETUP_REQ2 pSetupReq = XSFR_USB_BASE;
-								//USB_Request_Header_t *pSetupReq = XSFR_USB_BASE;
-								//len = get_usb_descriptor(pSetupReq->wValue,pSetupReq->wIndex,pSetupReq->wLength,(void *)(&pD0Descr));
-								//if (len==0) len = 0xffff;
-
 								// Determine whether it can be processed normally						
 								if( len != 0xFFFF )
 								{
@@ -704,19 +666,16 @@ USB_DevIntNext:
 									{
 #ifdef USE_D0_EP6_IN
 										case 0x86:
-										//case 0x06:
 											D0_EP6RES = D0_EP6RES & ~( MASK_UEP_X_RES ) | UEP_X_RES_STALL;
 											break;
 #endif
 											
 #ifdef USE_D0_EP5_IN
 										case 0x85:
-										//case 0x05:
 											D0_EP5RES = D0_EP5RES & ~( MASK_UEP_X_RES ) | UEP_X_RES_STALL;
 											break;
 #endif
 											
-										//case 0x84:
 #ifdef USE_D0_EP4_OUT
 										case 0x04:
 											D0_EP4RES = D0_EP4RES & ~( MASK_UEP_X_RES ) | UEP_X_RES_STALL;
@@ -885,7 +844,6 @@ USB_DevIntNext:
 											
 #ifdef USE_D0_EP5_IN
 										case 0x85:                                       
-										//case 0x05:
 											if( ( D0_EP5RES & MASK_UEP_X_RES ) == UEP_X_RES_STALL )
 											{
 												pD0_EP0_BUF[ 0 ] = 0x01;

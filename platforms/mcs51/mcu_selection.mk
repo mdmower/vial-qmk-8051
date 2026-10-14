@@ -1,6 +1,7 @@
 # Target architecture 
 ARCH = MCS51
-IRAM_SIZE  = 0x0100 #TODO upper 128 bytes only accessed through @Ri
+# 256 bytes; the upper 128 only through @Ri (SDCC puts the stack and __idata there)
+IRAM_SIZE  = 0x0100
 
 ifneq (,$(filter $(MCU),ch552 ch554))
 
@@ -10,7 +11,6 @@ ifneq (,$(filter $(MCU),ch552 ch554))
   CODE_SIZE  = 0x3800
   
   F_CPU      = 12000000
- #F_USB = 48000000 
 
   PROTOCOL = CH554
 
@@ -29,7 +29,6 @@ ifneq (,$(filter $(MCU),ch555))
 
   # Fsys; a keyboard's rules.mk may set it (CfgFsys() in lib/ch555/hal.c: 12, 16, 24 or 32 MHz)
   F_CPU      ?= 24000000
- #F_USB = 48000000 
 
   PROTOCOL = CH555
 

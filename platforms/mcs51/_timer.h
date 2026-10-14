@@ -25,4 +25,3 @@
                                TH0 =((0x10000 - val)>>8) & 0xff
 
 void Timer0_ISR(void) __interrupt (INT_NO_TMR0) ;
-//void Timer0_ISR(void) __interrupt (1) ; // timer0 - 0x000B

@@ -21,9 +21,8 @@
 // Follow AVR port naming convention, P0 ~ PA, P1 ~ PB, ...
 #define PORT_SHIFTER 3
 
-// TODO implement P6 for CH555
+// CH555: P6 (P6.0/P6.1 are the USB D-/D+ pins) is not implemented in lib/ch555/gpio.c.
 #if defined(QMK_MCU_CH552) 
-//#    define ADDRESS_BASE 0x00
 #    define PORT1 0x1
 #    define PORT3 0x3
 #elif defined(QMK_MCU_CH555)
@@ -33,17 +32,13 @@
 #    define PORT3 0x3
 #    define PORT4 0x4
 #    define PORT5 0x5
-//#    define PORT6 0x6
 #    define PORT7 0x7
 #endif
 
-//__code uint8_t pin_to_pinmask[] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
 extern __code uint8_t pin_to_pinmask[];
 #define PINDEF(port, pin) ((PORT##port << PORT_SHIFTER) | pin)
 
-// Get Pin Mask from pin def
-//#define PIN_MASK(p) 1<<(p & 0x07)
-// The damn 8051 don't have barrel shifter, so do this:
+// Get Pin Mask from pin def. The 8051 shifts by a variable count only in a loop: look the mask up in a table.
 #define PIN_MASK(p) pin_to_pinmask[p & ((1<<PORT_SHIFTER)-1)]
 // Get Port ID from pin def
 #define PORTx(p) (p >> PORT_SHIFTER)
@@ -110,16 +105,6 @@ extern __code uint8_t pin_to_pinmask[];
 #    define PORT5_5 PINDEF(5, 5)
 #    define PORT5_6 PINDEF(5, 6)
 #    define PORT5_7 PINDEF(5, 7)
-#endif
-#ifdef PORT6
-#    define PORT6_0 PINDEF(6, 0)
-#    define PORT6_1 PINDEF(6, 1)
-#    define PORT6_2 PINDEF(6, 2)
-#    define PORT6_3 PINDEF(6, 3)
-#    define PORT6_4 PINDEF(6, 4)
-#    define PORT6_5 PINDEF(6, 5)
-#    define PORT6_6 PINDEF(6, 6)
-#    define PORT6_7 PINDEF(6, 7)
 #endif
 #ifdef PORT7
 // P7 has only P7.0 and P7.1; its register holds their DIR, OUT_PU and IN bits.

@@ -57,7 +57,6 @@
     JOYSTICK_IN_EPNUM==1 || \
     DIGITIZER_IN_EPNUM==1
 #define USE_D0_EP1_IN
-//#define DEF_EP1_SIZE               DEFAULT_ENDP0_SIZE                           /* Keyboard endpoint packet size */
 #endif
 #if KEYBOARD_IN_EPNUM==2 || RAW_IN_EPNUM==2 || SHARED_IN_EPNUM==2 || CONSOLE_IN_EPNUM==2 || MIDI_STREAM_IN_EPNUM==2 || CDC_IN_EPNUM==2 || JOYSTICK_IN_EPNUM==2 || DIGITIZER_IN_EPNUM==2
 #define USE_D0_EP2_IN
@@ -135,7 +134,7 @@ void ch555_sleep_exit_kb( void );
 
 #pragma save
 #pragma nooverlay
-extern void USB_DeviceInterrupt( void ) __interrupt(INT_NO_USB);// __using(1);
+extern void USB_DeviceInterrupt( void ) __interrupt(INT_NO_USB);
 #pragma restore
 
 /***********************************************************************************************************************/

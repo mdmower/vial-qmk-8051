@@ -28,10 +28,9 @@
     } while (0)
 #define CPU_CLOCK F_CPU
 
-/* Not sure about CH55x read delay for changes in the digital input signal.
- * Let's make it two clocks as AVR. */
+/* Delay before a pin is read after a change (quantum/matrix_common.c). The CH55x value is not known: two
+ * passes of wait_cpuclock(), as AVR waits two clocks. */
 #ifndef GPIO_INPUT_PIN_DELAY
-//#    define GPIO_INPUT_PIN_DELAY 2
 #    define GPIO_INPUT_PIN_DELAY 2
 #endif
 

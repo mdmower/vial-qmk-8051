@@ -5,8 +5,6 @@
 
 __code uint8_t pin_to_pinmask[] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
 
-//TODO: implement P6
-
 void pinModeInputHighQMK(uint8_t pin) {
     __data uint8_t port = PORTx(pin);
     __data uint8_t pinmask  = PIN_MASK(pin);
@@ -192,13 +190,7 @@ void pinModeOutputOpen(uint8_t pin) {
         P4_DIR_PU &= ~pinmask;
         break;
 #endif
-//#ifdef PORT7
-//#   error "Port 7 of CH555 dont have Open Drain Output mode."
-// use push pull mode instead
-//        case PORT7:
-//        P7 |=  (pinmask<<2); // _DIR
-//        break;
-//#endif
+        // P5 and P7 have no open-drain mode (datasheet 10.2): push-pull output, or input with or without pull-up
     }
 }
 void pinModeBiDi(uint8_t pin) {
@@ -235,14 +227,7 @@ void pinModeBiDi(uint8_t pin) {
         P4_DIR_PU |=  pinmask;
         break;
 #endif
-//#ifdef PORT7
-//#   error "Port 7 of CH555 dont have Quasi-Bidi mode."
-// but it does have input pull high, similar to Quasi-Bidi mode
-//        case PORT7:
-//        P7 &= ~(pinmask<<2); // _DIR
-//        P7 |=  pinmask; // _OUT_PU
-//        break;
-//#endif
+        // P5 and P7 have no quasi-bidirectional mode (datasheet 10.2)
     }
 }
 uint8_t readPin(uint8_t pin) {

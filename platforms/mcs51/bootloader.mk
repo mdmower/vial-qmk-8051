@@ -14,13 +14,8 @@ ifeq ($(strip $(BOOTLOADER)), custom)
 endif
 
 ifeq ($(strip $(BOOTLOADER)), ch55xbl)
-   #OPT_DEFS += -DBOOTLOADER_ATMEL_DFU
-   #OPT_DEFS += -DBOOTLOADER_DFU
     BOOTLOADER_TYPE = ch55xbl
-
-   #ifneq (,$(filter $(MCU), at90usb162 atmega16u2 atmega32u2 atmega16u4 atmega32u4 at90usb646 at90usb647))
-        BOOTLOADER_SIZE = 4096
-   #endif
+    BOOTLOADER_SIZE = 4096
 endif
 
 ifdef BOOTLOADER_SIZE

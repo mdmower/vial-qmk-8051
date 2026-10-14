@@ -151,7 +151,7 @@
 #endif
 
 #ifndef USB_DEVICE_ADDR
-#define	USB_DEVICE_ADDR			0x02	/* Ä¬ÈÏµÄUSBÉè±¸µØÖ· */
+#define	USB_DEVICE_ADDR			0x02	/* default USB device address */
 #endif
 #ifndef DEFAULT_ENDP0_SIZE
 #define DEFAULT_ENDP0_SIZE      8       /* default maximum packet size for endpoint 0 */
@@ -160,15 +160,15 @@
 #define MAX_PACKET_SIZE         64      /* maximum packet size */
 #endif
 #ifndef USB_BO_CBW_SIZE
-#define USB_BO_CBW_SIZE			0x1F	/* ÃüÁî¿éCBWµÄ×Ü³¤¶È */
-#define USB_BO_CSW_SIZE			0x0D	/* ÃüÁî×´Ì¬¿éCSWµÄ×Ü³¤¶È */
+#define USB_BO_CBW_SIZE			0x1F	/* total length of the command block wrapper (CBW) */
+#define USB_BO_CSW_SIZE			0x0D	/* total length of the command status wrapper (CSW) */
 #endif
 #ifndef USB_BO_CBW_SIG0
-#define USB_BO_CBW_SIG0         0x55    /* ÃüÁî¿éCBWÊ¶±ð±êÖ¾'USBC' */
+#define USB_BO_CBW_SIG0         0x55    /* CBW signature 'USBC' */
 #define USB_BO_CBW_SIG1         0x53
 #define USB_BO_CBW_SIG2         0x42
 #define USB_BO_CBW_SIG3         0x43
-#define USB_BO_CSW_SIG0         0x55    /* ÃüÁî×´Ì¬¿éCSWÊ¶±ð±êÖ¾'USBS' */
+#define USB_BO_CSW_SIG0         0x55    /* CSW signature 'USBS' */
 #define USB_BO_CSW_SIG1         0x53
 #define USB_BO_CSW_SIG2         0x42
 #define USB_BO_CSW_SIG3         0x53
