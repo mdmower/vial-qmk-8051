@@ -197,6 +197,17 @@ void USB_Device_Init( void )
 	IE_USB = 1;                              // usb interrupt enable
 }
 
+/* CLEAR_FEATURE(ENDPOINT_HALT) (USB 2.0 9.4.5; also SET_CONFIGURATION for an OUT endpoint): the data toggle
+ * restarts at DATA0, and only a halted endpoint (STALL) changes its response: IN to NAK (the main loop loads the
+ * next report), OUT to ACK, or to NAK while a received packet waits for the main loop (read_EPn() sets ACK). A
+ * report the host has not read and a packet the main loop has not read are kept. */
+#define CLEAR_HALT_IN( res ) \
+	do { ( res ) &= ~bUEP_X_TOG; \
+	     if( ( ( res ) & MASK_UEP_X_RES ) == UEP_X_RES_STALL ) ( res ) = UEP_X_RES_NAK; } while( 0 )
+#define CLEAR_HALT_OUT( res, data_wait ) \
+	do { ( res ) &= ~bUEP_X_TOG; \
+	     if( ( ( res ) & MASK_UEP_X_RES ) == UEP_X_RES_STALL ) ( res ) = ( data_wait ) ? UEP_X_RES_NAK : UEP_X_RES_ACK; } while( 0 )
+
 /*******************************************************************************
 * Function Name  : USB_DeviceInterrupt
 * Description    : CH55X Usb device interrupt handler function
@@ -637,8 +648,9 @@ USB_DevIntNext:
 								/* configuration 0 returns the device to the Address state (USB 2.0 9.4.7): no reports until
 								 * the host configures it again */
 								USB_EnumStatus = D0UsbConfig ? 0x01 : 0x00;
-								/* the host restarts every endpoint at DATA0; an IN endpoint goes to NAK, so that a report
-								 * still waiting in it from the previous configuration is not read in the new one */
+								/* the host restarts every endpoint at DATA0 and a halt ends (USB 2.0 9.4.5); an IN endpoint
+								 * goes to NAK, so that a report still waiting in it from the previous configuration is not
+								 * read in the new one */
 #ifdef USE_D0_EP1_IN
 								D0_EP1RES = UEP_X_RES_NAK;
 #endif
@@ -649,7 +661,7 @@ USB_DevIntNext:
 								D0_EP3RES = UEP_X_RES_NAK;
 #endif
 #ifdef USE_D0_EP3_OUT
-								D0_EP3RES &= ~bUEP_X_TOG;
+								CLEAR_HALT_OUT( D0_EP3RES, ep3_data_wait );
 #endif
 #ifdef USE_D0_EP5_IN
 								D0_EP5RES = UEP_X_RES_NAK;
@@ -744,55 +756,55 @@ USB_DevIntNext:
 									{
 #ifdef USE_D0_EP6_IN
 										case 0x86:
-											D0_EP6RES = D0_EP6RES & ~( bUEP_X_TOG | MASK_UEP_X_RES ) | UEP_X_RES_NAK;
+											CLEAR_HALT_IN( D0_EP6RES );
 											break;
 #endif
 											
 #ifdef USE_D0_EP5_IN
 										case 0x85:
-											D0_EP5RES = D0_EP5RES & ~( bUEP_X_TOG | MASK_UEP_X_RES ) | UEP_X_RES_NAK;
+											CLEAR_HALT_IN( D0_EP5RES );
 											break;
 #endif
 											
 #ifdef USE_D0_EP4_OUT
 										case 0x04:
-											D0_EP4RES = D0_EP4RES & ~( bUEP_X_TOG | MASK_UEP_X_RES ) | UEP_X_RES_ACK;
+											CLEAR_HALT_OUT( D0_EP4RES, ep4_data_wait );
 											break; 
 #endif
 																  
 #ifdef USE_D0_EP3_IN
 										case 0x83:
-											D0_EP3RES = D0_EP3RES & ~( bUEP_X_TOG | MASK_UEP_X_RES ) | UEP_X_RES_NAK;
+											CLEAR_HALT_IN( D0_EP3RES );
 											break;
 #endif
 											
 #ifdef USE_D0_EP3_OUT
 										case 0x03:
-											D0_EP3RES = D0_EP3RES & ~( bUEP_X_TOG | MASK_UEP_X_RES ) | UEP_X_RES_ACK;
+											CLEAR_HALT_OUT( D0_EP3RES, ep3_data_wait );
 											break; 
 #endif
 																  
 #ifdef USE_D0_EP2_IN
 										case 0x82:                       
-											D0_EP2RES = D0_EP2RES & ~( bUEP_X_TOG | MASK_UEP_X_RES ) | UEP_X_RES_NAK;
+											CLEAR_HALT_IN( D0_EP2RES );
 											break;   
 #endif
 																
 #ifdef USE_D0_EP2_OUT
 										case 0x02:                       
-											D0_EP2RES = D0_EP2RES & ~( bUEP_X_TOG | MASK_UEP_X_RES ) | UEP_X_RES_ACK;
+											CLEAR_HALT_OUT( D0_EP2RES, ep2_data_wait );
 											break; 
 #endif
 																  
 #ifdef USE_D0_EP1_IN
 										case 0x81:                       
-											D0_EP1RES = D0_EP1RES & ~( bUEP_X_TOG | MASK_UEP_X_RES ) | UEP_X_RES_NAK;
+											CLEAR_HALT_IN( D0_EP1RES );
 											break;
 #endif
 																   
 #ifdef USE_D0_EP1_OUT
 										case 0x01:                       
-											D0_EP1RES = D0_EP1RES & ~( bUEP_X_TOG | MASK_UEP_X_RES ) | UEP_X_RES_ACK;
+											CLEAR_HALT_OUT( D0_EP1RES, ep1_data_wait );
 											break;
 #endif
 											

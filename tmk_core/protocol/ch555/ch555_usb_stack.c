@@ -99,19 +99,34 @@ static void wake_host(void) {
 }
 
 /* An IN endpoint answers ACK while it holds a report the host has not read yet; the USB interrupt sets
- * it back to NAK when the host has read it. */
+ * it back to NAK when the host has read it. A report is loaded only into an endpoint at NAK: at STALL the
+ * endpoint is halted (SET_FEATURE(ENDPOINT_HALT)) until CLEAR_FEATURE(ENDPOINT_HALT), SET_CONFIGURATION or a
+ * bus reset (USB 2.0 9.4.5), and the report is kept or dropped as when the endpoint is busy.
+ * An OUT endpoint answers NAK from the packet's arrival (USB interrupt) until it is read here, and stays at
+ * STALL if it was halted meanwhile. */
 
-#ifdef USE_D0_EP1_IN
-/* Loads a report into EP1; returns false if the endpoint still holds the previous report. */
-static bool load_EP1(void *report, size_t size) {
-    if ((D0_EP1RES & MASK_UEP_X_RES) == UEP_X_RES_ACK) return false;
-    memcpy(pUSB_BUF_DEV0 + UX_EP1_ADDR, (uint8_t *)report, size);
-    D0_EP1T_L = size;
-    D0_EP1RES = D0_EP1RES & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
-    return true;
+/* Sets an endpoint from NAK to ACK. The USB interrupt is off for the test and the write: since the caller's
+ * test, the interrupt may have halted the endpoint or reset its toggle. Returns false if it is not at NAK. */
+static bool ack_from_nak(volatile UINT8X *res) {
+    bool ok;
+    IE_USB = 0;
+    ok = (*res & MASK_UEP_X_RES) == UEP_X_RES_NAK;
+    if (ok) *res = *res & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
+    IE_USB = 1;
+    return ok;
 }
 
-/* Keyboard endpoint. Does not wait: returns false if the endpoint still holds the previous report. */
+#ifdef USE_D0_EP1_IN
+/* Loads a report into EP1; returns false if the endpoint still holds the previous report or is halted. */
+static bool load_EP1(void *report, size_t size) {
+    if ((D0_EP1RES & MASK_UEP_X_RES) != UEP_X_RES_NAK) return false;
+    memcpy(pUSB_BUF_DEV0 + UX_EP1_ADDR, (uint8_t *)report, size);
+    D0_EP1T_L = size;
+    return ack_from_nak(&D0_EP1RES);
+}
+
+/* Keyboard endpoint. Does not wait: returns false if the endpoint still holds the previous report or is
+ * halted. */
 bool send_report_EP1(void *report, size_t size) {
     if (!USB_EnumStatus) return false;
     wake_host();
@@ -120,15 +135,14 @@ bool send_report_EP1(void *report, size_t size) {
 #endif
 #ifdef USE_D0_EP2_IN
 /* Shared endpoint (NKRO, extra keys). Does not wait: returns false if the endpoint still holds the
- * previous report. */
+ * previous report or is halted. */
 bool send_report_EP2(void *report, size_t size) {
     if (!USB_EnumStatus) return false;
     wake_host();
-    if ((D0_EP2RES & MASK_UEP_X_RES) == UEP_X_RES_ACK) return false;
+    if ((D0_EP2RES & MASK_UEP_X_RES) != UEP_X_RES_NAK) return false;
     memcpy(pUSB_BUF_DEV0 + UX_EP2_ADDR, (uint8_t *)report, size);
     D0_EP2T_L = size;
-    D0_EP2RES = D0_EP2RES & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
-    return true;
+    return ack_from_nak(&D0_EP2RES);
 }
 #endif
 #ifdef USE_D0_EP3_IN
@@ -141,11 +155,11 @@ void send_report_EP3(void *report, size_t size) {
     while (timeout-- && ((D0_EP3RES & MASK_UEP_X_RES) == UEP_X_RES_ACK)) {
         wait_us(40);
     }
-    if ((D0_EP3RES & MASK_UEP_X_RES) == UEP_X_RES_ACK) return;
+    if ((D0_EP3RES & MASK_UEP_X_RES) != UEP_X_RES_NAK) return;
 
     memcpy(pUSB_BUF_DEV0 + UX_EP3_ADDR, (uint8_t *)report, size);
     D0_EP3T_L = size;
-    D0_EP3RES = D0_EP3RES & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
+    ack_from_nak(&D0_EP3RES);
 }
 #endif
 #ifdef USE_D0_EP4_IN
@@ -158,11 +172,11 @@ void send_report_EP4(void *report, size_t size) {
     while (timeout-- && ((D0_EP4RES & MASK_UEP_X_RES) == UEP_X_RES_ACK)) {
         wait_us(40);
     }
-    if ((D0_EP4RES & MASK_UEP_X_RES) == UEP_X_RES_ACK) return;
+    if ((D0_EP4RES & MASK_UEP_X_RES) != UEP_X_RES_NAK) return;
 
     memcpy(pUSB_BUF_DEV0 + UX_EP4_ADDR, (uint8_t *)report, size);
     D0_EP4T_L = size;
-    D0_EP4RES = D0_EP4RES & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
+    ack_from_nak(&D0_EP4RES);
 }
 #endif
 #ifdef USE_D0_EP5_IN
@@ -173,20 +187,21 @@ void send_report_EP5(void *report, size_t size) {
     while (timeout-- && ((D0_EP5RES & MASK_UEP_X_RES) == UEP_X_RES_ACK)) {
         wait_us(40);
     }
-    if ((D0_EP5RES & MASK_UEP_X_RES) == UEP_X_RES_ACK) return;
+    if ((D0_EP5RES & MASK_UEP_X_RES) != UEP_X_RES_NAK) return;
     memcpy(pUSB_BUF_DEV0 + UX_EP5_ADDR, (uint8_t *)report, size);
     D0_EP5T_L = size;
-    D0_EP5RES = D0_EP5RES & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
+    ack_from_nak(&D0_EP5RES);
 }
 #endif
 
-/* An OUT endpoint answers NAK from the packet's arrival (USB interrupt) until it is read here. */
+/* epN_data_wait is cleared after the copy: CLEAR_FEATURE(ENDPOINT_HALT) sets a halted OUT endpoint to ACK
+ * only while no packet waits. */
 #ifdef USE_D0_EP1_OUT
 bool read_EP1(void *report, size_t size) {
     if (ep1_data_wait) {
-        ep1_data_wait = 0;
         memcpy(report, pUSB_BUF_DEV0 + UX_EP1_ADDR, size);
-        D0_EP1RES = D0_EP1RES & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
+        ep1_data_wait = 0;
+        ack_from_nak(&D0_EP1RES);
         return true;
     }
     return false;
@@ -195,9 +210,9 @@ bool read_EP1(void *report, size_t size) {
 #ifdef USE_D0_EP2_OUT
 bool read_EP2(void *report, size_t size) {
     if (ep2_data_wait) {
-        ep2_data_wait = 0;
         memcpy(report, pUSB_BUF_DEV0 + UX_EP2_ADDR, size);
-        D0_EP2RES = D0_EP2RES & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
+        ep2_data_wait = 0;
+        ack_from_nak(&D0_EP2RES);
         return true;
     }
     return false;
@@ -206,9 +221,9 @@ bool read_EP2(void *report, size_t size) {
 #ifdef USE_D0_EP3_OUT
 bool read_EP3(void *report, size_t size) {
     if (ep3_data_wait) {
-        ep3_data_wait = 0;
         memcpy(report, pUSB_BUF_DEV0 + UX_EP3_ADDR, size);
-        D0_EP3RES = D0_EP3RES & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
+        ep3_data_wait = 0;
+        ack_from_nak(&D0_EP3RES);
         return true;
     }
     return false;
@@ -217,9 +232,9 @@ bool read_EP3(void *report, size_t size) {
 #ifdef USE_D0_EP4_OUT
 bool read_EP4(void *report, size_t size) {
     if (ep4_data_wait) {
-        ep4_data_wait = 0;
         memcpy(report, pUSB_BUF_DEV0 + UX_EP4_ADDR, size);
-        D0_EP4RES = D0_EP4RES & ~MASK_UEP_X_RES | UEP_X_RES_ACK;
+        ep4_data_wait = 0;
+        ack_from_nak(&D0_EP4RES);
         return true;
     }
     return false;
