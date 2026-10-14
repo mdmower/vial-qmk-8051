@@ -63,8 +63,5 @@ int putchar(int c);
 int getchar(void);
 #endif
 
-void CH555WDTModeSelect(UINT8 mode);                       //CH555¿´ĂÅ¹·Ä£Ê½ÉèÖĂ 
-void CH555WDTFeed(UINT8 tim);                              //CH555¿´ĂÅ¹·Î¹¹·
-void CH555SoftReset(void);                                    //CH555Èí¸´Î»
   
 #endif

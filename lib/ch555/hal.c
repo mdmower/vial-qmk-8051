@@ -10,6 +10,7 @@
 * Attention: This software (modified or not) and binary are used for 
 * microcontroller manufactured by Nanjing Qinheng Microelectronics.
 ********************************************************************************/
+#include "config.h" // NO_PRINT
 #include "hal.h"
 
 /*******************************************************************************
@@ -139,6 +140,7 @@ void mDelaymS(UINT16 n)
 	}
 }                                         
 
+#ifndef NO_PRINT /* the UART is the print output; ch555_usb_stack.c calls mInitSTDIO() only without NO_PRINT */
 #ifdef UART0_PRINTF
 /*******************************************************************************
 * Function Name  : CH555UART0Alter
@@ -254,51 +256,4 @@ int putchar(int c) {
 	return c;
 }
 #endif
-
-/*******************************************************************************
-* Function Name  : CH555WDTModeSelect
-* Description    : CH555 Watchdog mode selection
-* Input          : mode：
-*                   0：timer
-*                   1：watchDog
-* Return         : None
-*******************************************************************************/
-void CH555WDTModeSelect(UINT8 mode)
-{
-	SAFE_MOD = 0x55;
-	SAFE_MOD = 0xaa;                                                             //Enter safe mode
-	if(mode){
-	 GLOBAL_CFG |= bWDOG_EN;                                                     //Start watchdog reset
-	}
-	else GLOBAL_CFG &= ~bWDOG_EN;	                                             //Start the watchdog only as a timer
-	SAFE_MOD = 0x00;                                                             //exit safe mode
-	WDOG_COUNT = 0;                                                              //Watchdog assigned initial value
-}
-
-/*******************************************************************************
-* Function Name  : CH555WDTFeed
-* Description    : CH555 Watchdog Feeding 
-*                  Watchdog reset time (s) = (256-tim)/(Fsys/131072)
-*                  00H(Fsys=12MHz)=2.8s
-*                  80H(Fsys=12MHz)=1.4s
-* Input          : tim：watchdog count assignment
-* Return         : None
-*******************************************************************************/
-void CH555WDTFeed(UINT8 tim)
-{
-	WDOG_COUNT = tim;                                                             //Watchdog counter assignment
-}
-
-/*******************************************************************************
-* Function Name  : CH555SoftReset
-* Description    : CH555 soft reset
-* Input          : None
-* Return         : None
-*******************************************************************************/
-void CH555SoftReset(void)
-{
-	SAFE_MOD = 0x55;
-	SAFE_MOD = 0xAA;
-	GLOBAL_CFG |= bSW_RESET;
-}
-
+#endif /* NO_PRINT */
