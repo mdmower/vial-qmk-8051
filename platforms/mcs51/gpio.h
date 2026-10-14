@@ -27,7 +27,6 @@ void pinModeOutputOpen(uint8_t pin) ;
 void pinModeBiDi(uint8_t pin) ;
 
 void pinModeInputHighQMK(uint8_t pin) ;
-void pinModeOutputQMK(uint8_t pin) ;
 
 void writePinLow(uint8_t pin) ;
 void writePinHigh(uint8_t pin) ;
@@ -38,7 +37,7 @@ uint8_t readPin(uint8_t pin) ;
 #define setPinInputLow  _Static_assert(0, "MCS51 processors cannot implement an input as pull low")
 #define setPinOutputPushPull pinModeOutputPushPull
 #define setPinOutputOpenDrain pinModeOutputOpen
-#define setPinOutput    pinModeOutputQMK
+#define setPinOutput    pinModeOutputPushPull
 
 //#define writePinHigh(pin) (PORTx_ADDRESS(pin) |= _BV((pin)&0xF))
 //#define writePinLow(pin) (PORTx_ADDRESS(pin) &= ~_BV((pin)&0xF))

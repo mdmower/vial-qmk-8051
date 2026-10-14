@@ -10,33 +10,42 @@ __code uint8_t pin_to_pinmask[] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x
 void pinModeInputHighQMK(uint8_t pin) {
     __data uint8_t port = PORTx(pin);
     __data uint8_t pinmask  = PIN_MASK(pin);
-    //uint8_t port = PORTx(pin);
-    //uint8_t pinmask  = PIN_MASK(pin);
     switch (port) {
-#ifdef PORT7
-        case PORT7:
-        P7 &= ~(pinmask<<2); // _DIR
-        P7 |=  pinmask; // _OUT_PU
-        break;
-#endif
-        // for port 0->4, use Quasi-BiDi mode, means very weak pull high, so let's write 1 to pull it high:
-#if defined(PORT0) || defined(PORT1) || defined(PORT2) || defined(PORT3) || defined(PORT4)
+        // P0-P4: quasi-bidirectional (open drain with pull-up) with the latch high. The latch is written first,
+        // so that a pin that was a high-Z input or an open-drain output with the latch low is not pulled low.
 #ifdef PORT0
         case PORT0:
+        P0        |= pinmask;
+        P0_MOD_OC |= pinmask;
+        P0_DIR_PU |= pinmask;
+        break;
 #endif
 #ifdef PORT1
         case PORT1:
+        P1        |= pinmask;
+        P1_MOD_OC |= pinmask;
+        P1_DIR_PU |= pinmask;
+        break;
 #endif
 #ifdef PORT2
         case PORT2:
+        P2        |= pinmask;
+        P2_MOD_OC |= pinmask;
+        P2_DIR_PU |= pinmask;
+        break;
 #endif
 #ifdef PORT3
         case PORT3:
+        P3        |= pinmask;
+        P3_MOD_OC |= pinmask;
+        P3_DIR_PU |= pinmask;
+        break;
 #endif
 #ifdef PORT4
         case PORT4:
-#endif
-        writePinHigh(pin);
+        P4        |= pinmask;
+        P4_MOD_OC |= pinmask;
+        P4_DIR_PU |= pinmask;
         break;
 #endif
 #ifdef PORT5
@@ -45,27 +54,14 @@ void pinModeInputHighQMK(uint8_t pin) {
         P5_OUT_PU |=  pinmask; /* pullup */
         break;
 #endif
+#ifdef PORT7
+        case PORT7:
+        P7 &= ~(pinmask<<2); // _DIR
+        P7 |=  pinmask; // _OUT_PU
+        break;
+#endif
     }
 
-}
-void pinModeOutputQMK(uint8_t pin) {
-#ifdef PORT7
-    __data uint8_t port = PORTx(pin);
-    __data uint8_t pinmask  = PIN_MASK(pin);
-    if (port == PORT7) {
-        P7 |=  (pinmask<<2); // _DIR
-    }
-#endif
-    // for port 0->4, use Quasi-BiDi mode. So we don't have to change mode. just need to writePin
-#ifdef PORT5
-    {
-        __data uint8_t port     = PORTx(pin);
-        __data uint8_t pinmask  = PIN_MASK(pin);
-        if (port == PORT5) {
-            P5_DIR |= pinmask; /* push-pull output */
-        }
-    }
-#endif
 }
 
 void pinModeInputZ(uint8_t pin) {
@@ -117,8 +113,8 @@ void pinModeInputZ(uint8_t pin) {
     }
 }
 void pinModeOutputPushPull(uint8_t pin) {
-    uint8_t port = PORTx(pin);
-    uint8_t pinmask  = PIN_MASK(pin);
+    __data uint8_t port = PORTx(pin);
+    __data uint8_t pinmask  = PIN_MASK(pin);
     switch (port) {
 #ifdef PORT0
         case PORT0:
