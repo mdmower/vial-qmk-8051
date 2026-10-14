@@ -5,7 +5,7 @@
 
 __code uint8_t pin_to_pinmask[] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
 
-//TODO: implement P5, P6; P7.2 to 7.7 does not exist
+//TODO: implement P6
 
 void pinModeInputHighQMK(uint8_t pin) {
     __data uint8_t port = PORTx(pin);

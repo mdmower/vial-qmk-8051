@@ -21,7 +21,7 @@
 // Follow AVR port naming convention, P0 ~ PA, P1 ~ PB, ...
 #define PORT_SHIFTER 3
 
-// TODO implement P5 and P6 for CH555
+// TODO implement P6 for CH555
 #if defined(QMK_MCU_CH552) 
 //#    define ADDRESS_BASE 0x00
 #    define PORT1 0x1
@@ -122,12 +122,7 @@ extern __code uint8_t pin_to_pinmask[];
 #    define PORT6_7 PINDEF(6, 7)
 #endif
 #ifdef PORT7
+// P7 has only P7.0 and P7.1; its register holds their DIR, OUT_PU and IN bits.
 #    define PORT7_0 PINDEF(7, 0)
 #    define PORT7_1 PINDEF(7, 1)
-#    define PORT7_2 PINDEF(7, 2)
-#    define PORT7_3 PINDEF(7, 3)
-#    define PORT7_4 PINDEF(7, 4)
-#    define PORT7_5 PINDEF(7, 5)
-#    define PORT7_6 PINDEF(7, 6)
-#    define PORT7_7 PINDEF(7, 7)
 #endif
