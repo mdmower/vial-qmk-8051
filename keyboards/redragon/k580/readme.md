@@ -69,7 +69,7 @@ util/k580_build.sh            # keymap "default"
 The output is `redragon_k580_default_oem.bin`. The image contains a check for Esc at plug-in at 0x2803 and the
 interrupt table that the bootloader jumps to at 0x3000 (made by `util/evision_oem_image.py`).
 
-The keyboard reports no USB serial number unless one is set at build time (letters, digits and `. _ : -`, at
+The USB serial number is the chip ID unless one is set at build time (letters, digits and `. _ : -`, at
 most 126 characters):
 
 ```

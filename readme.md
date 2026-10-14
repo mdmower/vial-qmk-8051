@@ -4,9 +4,8 @@ A fork of [vial-qmk](https://github.com/vial-kb/vial-qmk), itself a fork of [QMK
 that builds QMK for 8051 microcontrollers in the WCH CH555 family with the SDCC compiler. The branch `k580-ch55x`
 supports the Redragon K580 RGB (Evision VS11K33A), flashed through the keyboard's own Evision bootloader.
 
-Despite the vial-qmk origin and the repository name, Vial does not work here. On the K580, Vial and the VIA
-code it needs add about 7.8 KB of code and more internal RAM than the build has free, so the link fails.
-Keymaps are changed in the source and flashed as a new build.
+Despite the vial-qmk origin and the repository name, this branch has no Vial build (see "Not implemented"
+below). Keymaps are changed in the source and flashed as a new build.
 
 ## Credits
 
@@ -20,8 +19,8 @@ Keymaps are changed in the source and flashed as a new build.
 ## Status
 
 Experimental. The firmware has been tested on **one** keyboard, a Redragon K580 RGB with an Evision VS11K33A MCU
-and stock firmware 1.04, connected to Linux hosts only. Other keyboards, other K580 revisions, Windows and macOS
-have not been tested.
+and stock firmware 1.04, connected to Linux and Windows 11 hosts. Other keyboards, other K580 revisions and
+macOS have not been tested.
 
 | Keyboard | MCU | Flashed through | State on this branch |
 |---|---|---|---|
@@ -44,15 +43,21 @@ Works:
   is suspended.
 - The lighting settings and the roller mode are saved in the CH555 data flash and kept at power-off.
 - Holding Esc while plugging in the keyboard enters the bootloader.
+- USB serial number: the chip ID, or a serial number set at build time.
 
 Not implemented:
-- USB serial number.
 - QMK's EEPROM: the driver stores nothing, so QMK settings kept in EEPROM (eeconfig) are not saved. The
   keyboard's own settings use the data flash instead.
-- Vial: it did not work in the original port, and this branch has no Vial keymap.
+- Vial. A trial build with a 2-layer Vial keymap fits in flash (about 8.9 KB more code) and links once 10 bytes
+  of variables move from internal RAM to XRAM. Still open:
+  - Persistent storage for the dynamic keymap (about 545 bytes for 2 layers). The 1 KB data flash is used in
+    full by the log of the lighting settings.
+  - The stack depth of the Vial command path is not measured.
+  - With the Vial defines, SDCC 4.6.0 fails to start its assembler under `qmk compile`
+    (`sdas8051...: not found`), so the build needs a separate assembly step.
 
 Other limits:
-- About 19.5 KB of the application region (0x2800–0xEFBF, 51,136 bytes) is free.
+- About 18.4 KB of the application region (0x2800–0xEFBF, 51,136 bytes) is free.
 - To save flash, the K580 build turns off tap and one-shot keys, `send_string`, Grave Escape and the magic-key
   swap settings; the list is at the end of
   [keyboards/redragon/k580/rules.mk](keyboards/redragon/k580/rules.mk).
