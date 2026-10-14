@@ -28,7 +28,7 @@
 #endif
 
 
-#define	 FREQ_SYS	                     F_CPU	          //系统主频24MHz
+#define	 FREQ_SYS	                     F_CPU	          //System clock Fsys
 #define  OSC_EN_XT                       0                    //External crystal oscillator enable control
 #ifndef  UART0_BAUD
 #define  UART0_BAUD                      115200

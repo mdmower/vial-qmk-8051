@@ -27,7 +27,8 @@ ifneq (,$(filter $(MCU),ch555))
   XRAM_SIZE  = 0x0f00
   CODE_SIZE  = 0xf000
 
-  F_CPU      = 24000000
+  # Fsys; a keyboard's rules.mk may set it (CfgFsys() in lib/ch555/hal.c: 12, 16, 24 or 32 MHz)
+  F_CPU      ?= 24000000
  #F_USB = 48000000 
 
   PROTOCOL = CH555

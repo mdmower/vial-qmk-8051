@@ -36,10 +36,9 @@ void CfgFsys(void)
 	
 	SAFE_MOD = 0x55;
 	SAFE_MOD = 0xAA;
-#if FREQ_SYS == 48000000	
-	CLOCK_CFG = CLOCK_CFG & ~ MASK_SYS_CK_SEL | 0x07;  // 48MHz	
-	
-#endif	
+#if FREQ_SYS == 48000000
+#error "48 MHz is reserved for tests (datasheet table 8.2.2) and needs bLDO_CORE_VOL first"
+#endif
 	
 #if FREQ_SYS == 32000000	
 	CLOCK_CFG = CLOCK_CFG & ~ MASK_SYS_CK_SEL | 0x06;  // 32MHz	
@@ -90,9 +89,7 @@ void CfgFsys(void)
  * r6 does not branch, DJNZ r7 does). Interrupts that run during the loop lengthen the delay. */
 #define MDELAYUS_NOP2  "nop\n nop\n"
 #define MDELAYUS_NOP8  MDELAYUS_NOP2 MDELAYUS_NOP2 MDELAYUS_NOP2 MDELAYUS_NOP2
-#if FREQ_SYS == 48000000
-#define MDELAYUS_NOPS  MDELAYUS_NOP8 MDELAYUS_NOP8 MDELAYUS_NOP8 MDELAYUS_NOP8 MDELAYUS_NOP8 MDELAYUS_NOP2  /* 42 */
-#elif FREQ_SYS == 32000000
+#if FREQ_SYS == 32000000
 #define MDELAYUS_NOPS  MDELAYUS_NOP8 MDELAYUS_NOP8 MDELAYUS_NOP8 MDELAYUS_NOP2                              /* 26 */
 #elif FREQ_SYS == 24000000
 #define MDELAYUS_NOPS  MDELAYUS_NOP8 MDELAYUS_NOP8 MDELAYUS_NOP2                                            /* 18 */

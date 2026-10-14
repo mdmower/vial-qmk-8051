@@ -21,9 +21,10 @@ static __code const uint8_t mode_flags[MODES]   = {0, F_POS, F_POS | F_REV, F_PO
 static __code const uint8_t setting_steps[]     = {MODES, HUE_STEPS, 5, 8, 5, 2}; // mode, hue, sat, val, speed, on
 static __code const uint8_t sat_table[5]        = {0, 96, 160, 208, 255};
 static __code const uint8_t val_table[8]        = {8, 16, 32, 64, 96, 144, 200, 255};
-/* Phase advance per pass (one pass per LED frame, ~12.7 ms), in 1/256: one cycle takes 26, 13, 6.5,
- * 3.2 or 1.6 s */
-static __code const uint16_t speed_table[5]     = {32, 64, 128, 256, 512};
+/* Phase advance per pass, in 1/256. One pass per LED frame: 12.7 ms at 24 MHz, 9.5 ms at 32 MHz.
+ * FX_ADVANCE scales the advance at 24 MHz to F_CPU, so that one cycle takes 26, 13, 6.5, 3.2 or 1.6 s. */
+#define FX_ADVANCE(a24) ((uint16_t)((a24) * 24UL / (F_CPU / 1000000UL)))
+static __code const uint16_t speed_table[5]     = {FX_ADVANCE(32), FX_ADVANCE(64), FX_ADVANCE(128), FX_ADVANCE(256), FX_ADVANCE(512)};
 
 /*
  * Position of each LED along its zone, 0-191, by buffer slot (COM * 8 + group). F_POS modes add it

@@ -32,17 +32,13 @@ volatile uint32_t timer_count;
  * FIXME: needs doc
  */
 void timer_init(void) {
-    // Assumed that F_CPU = 12M
-
     // Set Timer0 clock = F_CPU/12
     T2MOD &= ~bT0_CLK;
 
     // Set Timer 0 mode 1 - 16bit no auto reload 
     TMOD = TMOD & 0xf0 | 0x01; //keep 4 MSB, set 4 LSB to value 1
 
-    // Set Timer 0 value to 1000 ~ 1ms
-    // val = F_TIMER0 / 1ms
-    // F_TIMER0 = F_CPU / 12 as setting above
+    // Counts per 1 ms tick at F_CPU/12: 2000 at 24 MHz; 2666 at 32 MHz (2666.67 truncated, tick 0.025% short)
     setTimer0Mode1Val(F_CPU/12/1000);
 
     // Let timer0 run:

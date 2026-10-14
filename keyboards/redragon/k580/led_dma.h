@@ -29,7 +29,7 @@ extern __xdata __at(LED_DMA_BUF_ADDR) uint8_t led_dma_buf[LED_DMA_COMS * LED_DMA
 extern volatile __xdata uint8_t led_dma_keys[LED_DMA_COMS];
 /* Set after the last COM of a frame has been read. */
 extern volatile __bit led_dma_frame;
-/* Frame counter, +1 after the last COM of each frame (~12.7 ms). */
+/* Frame counter, +1 after the last COM of each frame (304128 clocks: 12.7 ms at 24 MHz, 9.5 ms at 32 MHz). */
 extern volatile __data uint8_t led_dma_frames;
 
 void led_dma_init(void);
