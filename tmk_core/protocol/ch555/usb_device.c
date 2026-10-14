@@ -47,6 +47,32 @@ volatile UINT8  ep3_data_wait   = 0x00;											/* endpoint 3 data waiting fla
 volatile UINT8  ep4_data_wait   = 0x00;											/* endpoint 4 data waiting flag*/
 #endif
 
+#if !defined(SERIAL_NUMBER) && defined(SERIAL_NUMBER_USE_HARDWARE_ID)
+#include "hardware_id.h"
+
+/* String descriptor 3 (serial number), in xdata: the 48-bit chip ID as 12 hex digits, bytes in get_hardware_id()
+ * order, high nibble first. 26 bytes: always sent in one EP0 packet. */
+static struct {
+	USB_Descriptor_Header_t	Header;
+	UINT16					UnicodeString[12];
+} D0SerialString;
+
+static void D0SerialStringInit( void )
+{
+	static const char __code hex[] = "0123456789ABCDEF";
+	hardware_id_t id = get_hardware_id();
+	UINT8X *p = (UINT8X *)&id;
+	UINT8 i;
+
+	D0SerialString.Header.Size = sizeof( D0SerialString );
+	D0SerialString.Header.Type = DTYPE_String;
+	for( i = 0; i < 6; i++ ) {
+		D0SerialString.UnicodeString[2 * i]     = hex[p[i] >> 4];
+		D0SerialString.UnicodeString[2 * i + 1] = hex[p[i] & 0x0F];
+	}
+}
+#endif
+
 //UINT8D  RGB_Mode = 0x00;
 void USB_EP_init( void )  
 {
@@ -142,7 +168,10 @@ void USB_Device_Init( void )
 #ifdef USE_D0_EP4_OUT
 	ep4_data_wait   = 0x00;
 #endif
-	KB_USB_SetReport = 0x00;													/* Usb keyboard set report value */  
+	KB_USB_SetReport = 0x00;													/* Usb keyboard set report value */
+#if !defined(SERIAL_NUMBER) && defined(SERIAL_NUMBER_USE_HARDWARE_ID)
+	D0SerialStringInit();
+#endif
 
 	/* Initialize usb related registers */
 	IE_USB = 0;                              // usb interrupt dissable, avoid acidental interrupt during init
@@ -442,6 +471,11 @@ USB_DevIntNext:
 												pD0Descr = (PUINT8C)( &SerialNumberString );
 												len = SerialNumberString.Header.Size;
 												break;
+											#elif defined(SERIAL_NUMBER_USE_HARDWARE_ID)
+											case 3:
+												pD0Descr = (PUINT8C)0;	/* D0SerialString (xdata), copied below */
+												len = sizeof( D0SerialString );
+												break;
 											#endif
 												
 											default:
@@ -605,10 +639,21 @@ USB_DevIntNext:
 									}
 									len = D0SetupLen >= DEF_ENDP0_SIZE ? DEF_ENDP0_SIZE : D0SetupLen;  /* The length of this transmission */
 									D0SetupLen -= len;
-									for( i = 0; i < len; i++ ) {
-										pD0_EP0_BUF[i] = pD0Descr[i];
+#if !defined(SERIAL_NUMBER) && defined(SERIAL_NUMBER_USE_HARDWARE_ID)
+									if( !pD0Descr )
+									{
+										for( i = 0; i < len; i++ ) {
+											pD0_EP0_BUF[i] = ((UINT8X *)&D0SerialString)[i];
+										}
 									}
-									pD0Descr += len;
+									else
+#endif
+									{
+										for( i = 0; i < len; i++ ) {
+											pD0_EP0_BUF[i] = pD0Descr[i];
+										}
+										pD0Descr += len;
+									}
 								}
 								break;
 								

@@ -44,6 +44,13 @@ VPATH += $(TMK_PATH)/$(CH555_DIR)/lufa_utils
 CH555_OPTS += -DFIXED_CONTROL_ENDPOINT_SIZE=64
 CH555_OPTS += -DFIXED_NUM_CONFIGURATIONS=1
 
+# USB serial number from the chip ID (get_hardware_id()) when SERIAL_NUMBER is not set;
+# SERIAL_NUMBER_USE_HARDWARE_ID = no in a keyboard's rules.mk leaves the device without a serial number.
+SERIAL_NUMBER_USE_HARDWARE_ID ?= yes
+ifeq ($(strip $(SERIAL_NUMBER_USE_HARDWARE_ID)), yes)
+    CH555_OPTS += -DSERIAL_NUMBER_USE_HARDWARE_ID
+endif
+
 OPT_DEFS += -DF_USB=$(F_USB)UL
 OPT_DEFS += -DARCH=ARCH_$(ARCH)
 OPT_DEFS += $(CH555_OPTS)

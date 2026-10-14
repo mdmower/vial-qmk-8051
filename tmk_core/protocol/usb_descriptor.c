@@ -473,7 +473,7 @@ const USB_Descriptor_Device_t PROGMEM DeviceDescriptor = {
     .ReleaseNumber              = DEVICE_VER,
     .ManufacturerStrIndex       = 0x01,
     .ProductStrIndex            = 0x02,
-#if defined(SERIAL_NUMBER)
+#if defined(SERIAL_NUMBER) || defined(SERIAL_NUMBER_USE_HARDWARE_ID)
     .SerialNumStrIndex          = 0x03,
 #else
     .SerialNumStrIndex          = 0x00,

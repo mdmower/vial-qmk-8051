@@ -62,8 +62,8 @@ ifeq ($(strip $(EVISION_OEM_BOOTLOADER)), yes)
     OPT_DEFS += -DEVISION_OEM_BOOTLOADER
 endif
 
-# USB serial number of the keyboard devices (the hub reports none), optional:
-# qmk compile ... -e SERIAL_NUMBER=<serial>, or SERIAL_NUMBER=<serial> util/k580_build.sh.
+# USB serial number, optional: qmk compile ... -e SERIAL_NUMBER=<serial>, or SERIAL_NUMBER=<serial> util/k580_build.sh.
+# Without it, the serial number is the chip ID (SERIAL_NUMBER_USE_HARDWARE_ID in tmk_core/protocol/ch555/ch555.mk).
 # Letters, digits and . _ : - only (the value passes through the shell), at most 126 characters.
 ifneq ($(strip $(SERIAL_NUMBER)),)
     OPT_DEFS += -DSERIAL_NUMBER=\"$(strip $(SERIAL_NUMBER))\"
