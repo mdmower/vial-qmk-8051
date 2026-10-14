@@ -5,6 +5,9 @@ ENCODER_ENABLE = yes
 CUSTOM_MATRIX = lite
 SRC += led_dma.c led_fx.c matrix.c
 OPT_DEFS += -DCH555_LED_DMA_ENABLE
+# Fsys 32 MHz, as stock 1.04 (CH555 default here: 24 MHz). The LED frame, and with it the key
+# sampling period, is 304128 clocks: 9.5 ms at 32 MHz, 12.7 ms at 24 MHz.
+F_CPU = 32000000
 # Lighting settings saved in the data flash (flash_store.c)
 SRC += flash_store.c
 CH555_DATA_FLASH_ENABLE = yes
