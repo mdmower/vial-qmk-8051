@@ -208,6 +208,11 @@ void USB_Device_Init( void )
 	do { ( res ) &= ~bUEP_X_TOG; \
 	     if( ( ( res ) & MASK_UEP_X_RES ) == UEP_X_RES_STALL ) ( res ) = ( data_wait ) ? UEP_X_RES_NAK : UEP_X_RES_ACK; } while( 0 )
 
+/* D0_EPnRES and epn_data_wait of endpoint n, given as a number or a macro of one (the *_EPNUM of usb_descriptor.h) */
+#define D0_EPN_RES( n ) XBYTE[ 0x2200 + ( n ) ]
+#define EPN_DATA_WAIT( n ) EPN_DATA_WAIT_( n )
+#define EPN_DATA_WAIT_( n ) ep##n##_data_wait
+
 /*******************************************************************************
 * Function Name  : USB_DeviceInterrupt
 * Description    : CH55X Usb device interrupt handler function
@@ -644,6 +649,13 @@ USB_DevIntNext:
 								break; 
 														
 							case USB_SET_CONFIGURATION:
+								/* USB 2.0 9.4.7: 0, or the bConfigurationValue of the one configuration (1); another value
+								 * is a Request Error */
+								if( pD0_SETUP_REQ->wValueL > 1 )
+								{
+									len = 0xFFFF;
+									break;
+								}
 								D0UsbConfig = pD0_SETUP_REQ->wValueL;
 								/* configuration 0 returns the device to the Address state (USB 2.0 9.4.7): no reports until
 								 * the host configures it again */
@@ -745,6 +757,32 @@ USB_DevIntNext:
 								break;
 													
 							case USB_SET_INTERFACE:
+								/* USB 2.0 9.4.10: a Request Error in the Address state and for an interface or alternate
+								 * setting that does not exist (each interface has only setting 0). The request restarts
+								 * the data toggles of the interface's endpoints and ends their halts (9.4.5). */
+								if( D0UsbConfig == 0 || pD0_SETUP_REQ->wIndexL >= TOTAL_INTERFACES
+								 || pD0_SETUP_REQ->wValueL != 0 || pD0_SETUP_REQ->wValueH != 0 )
+								{
+									len = 0xFFFF;
+									break;
+								}
+								switch( pD0_SETUP_REQ->wIndexL )
+								{
+									case KEYBOARD_INTERFACE:
+										CLEAR_HALT_IN( D0_EPN_RES( KEYBOARD_IN_EPNUM ) );
+										break;
+#ifdef RAW_ENABLE
+									case RAW_INTERFACE:
+										CLEAR_HALT_IN( D0_EPN_RES( RAW_IN_EPNUM ) );
+										CLEAR_HALT_OUT( D0_EPN_RES( RAW_OUT_EPNUM ), EPN_DATA_WAIT( RAW_OUT_EPNUM ) );
+										break;
+#endif
+#if defined(SHARED_EP_ENABLE) && !defined(KEYBOARD_SHARED_EP)
+									case SHARED_INTERFACE:
+										CLEAR_HALT_IN( D0_EPN_RES( SHARED_IN_EPNUM ) );
+										break;
+#endif
+								}
 								break;
 								
 							case USB_CLEAR_FEATURE:
@@ -825,6 +863,13 @@ USB_DevIntNext:
 								break;
 												
 							case USB_GET_INTERFACE:
+								/* USB 2.0 9.4.4: a Request Error in the Address state and for an interface that does not
+								 * exist. pD0_EP0_BUF is also the SETUP packet: byte 0 is written after the test. */
+								if( D0UsbConfig == 0 || pD0_SETUP_REQ->wIndexL >= TOTAL_INTERFACES )
+								{
+									len = 0xFFFF;
+									break;
+								}
 								pD0_EP0_BUF[ 0 ] = 0x00;
 								if( D0SetupLen >= 1 ) 
 								{
@@ -1020,7 +1065,10 @@ USB_DevIntNext:
 								
 							case DEF_USB_GET_IDLE:								/* 0x02: GET_IDLE */
 								pD0_EP0_BUF[ 0 ] = ( pD0_SETUP_REQ->wIndexL == KEYBOARD_INTERFACE ) ? Idle_Value : 0;
-								len = 1;
+								if( D0SetupLen >= 1 )
+								{
+									len = 1;
+								}
 								break;
 
 							case DEF_USB_GET_PROTOCOL:							/* 0x03: GET_PROTOCOL */
@@ -1028,7 +1076,10 @@ USB_DevIntNext:
 								if( pD0_SETUP_REQ->wIndexL == KEYBOARD_INTERFACE )
 								{
 									pD0_EP0_BUF[ 0 ] = Report_Value;
-									len = 1;
+									if( D0SetupLen >= 1 )
+									{
+										len = 1;
+									}
 								}
 								else
 								{
