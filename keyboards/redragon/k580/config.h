@@ -40,6 +40,9 @@
 /* NKRO report from startup; no EEPROM keeps the setting */
 #define FORCE_NKRO
 
+/* MCU sleep in USB suspend; the keys wake it (led_dma.c) */
+#define CH555_SUSPEND_SLEEP
+
 /* RGB Matrix */
 //#define RGB_MATRIX_LED_COUNT 104 /* 104 physical keys; DMA buffer is 18×6=108 internally */
 //#define RGB_MATRIX_MAXIMUM_BRIGHTNESS 200

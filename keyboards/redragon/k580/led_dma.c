@@ -15,7 +15,7 @@ __xdata __at(LED_DMA_BUF_ADDR) uint8_t led_dma_buf[LED_DMA_COMS * LED_DMA_GROUPS
 volatile __xdata uint8_t led_dma_keys[LED_DMA_COMS];
 volatile __bit           led_dma_frame;
 volatile __data uint8_t  led_dma_frames;
-static __data uint8_t    led_com;
+static volatile __data uint8_t led_com;
 /* LED data for the COMs while the LEDs are off: all zero */
 static __xdata __at(LED_DMA_BUF_ADDR + sizeof(led_dma_buf)) uint8_t led_dma_off[LED_DMA_GROUPS * 4];
 static __bit led_dark;
@@ -202,5 +202,41 @@ void led_dma_init(void) {
 /* LEDs on or off; the controller and the key scan keep running in both cases. The LEDs are also
  * off while the device is not configured (led_dma_isr). */
 void led_dma_output(bool on) {
+    uint8_t com;
+
     led_dark = !on;
+    /* Off: wait for the next interrupt, which loads the all-zero data. The controller keeps the
+     * data of its current COM while the MCU sleeps (ch555_sleep_enter_kb) and shows it again when it
+     * restarts; stock 1.04 waits 2 ms after it clears its buffer. */
+    if (!on) {
+        com = led_com;
+        while (led_com == com) {
+        }
+    }
+}
+
+/* Before the MCU sleeps in USB suspend (stock 1.04 @0x7955): controller off, P4 to key input with
+ * pull-up and every COM low, so that a pressed key pulls its row low; with key_wake, a level change
+ * on P4 wakes the MCU. */
+void ch555_sleep_enter_kb(uint8_t key_wake) {
+    P4_LED_KEY = 0xFF;
+    P4_MOD_OC  = 0xFF;
+    LED_CTRL &= ~bLED_EN;
+    P0 = 0;
+    P3 = 0;
+    P7 &= ~(bP7_0_OUT_PU | bP7_1_OUT_PU);
+    if (key_wake) {
+        PORT_CFG |= bP4_IE_LEVEL;
+    }
+}
+
+/* After the wake (stock 1.04 @0x79f1): COMs high, controller on; the interrupt continues with the
+ * next COM. */
+void ch555_sleep_exit_kb(void) {
+    PORT_CFG &= ~bP4_IE_LEVEL;
+    P0 = 0xFF;
+    P3 = 0xFF;
+    P7 |= bP7_0_OUT_PU | bP7_1_OUT_PU;
+    LED_CTRL    = bLED_IE_INHIB | bLED_BLUE_EN | bLED_GREEN_EN | bLED_RED_EN | bLED_COM_AHEAD | bLED_PWM_INHIB | bLED_EN;
+    LED_STATUS |= bLED_IF_SET;
 }

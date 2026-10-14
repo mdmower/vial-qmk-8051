@@ -1065,8 +1065,7 @@ USB_DevIntNext:
 		{       
 			/* Bus suspend: no bus activity for 4-6 ms (datasheet, Tusp). USB_EnumStatus is kept: the
 			 * configuration lasts through a suspend (USB 2.0 9.1.1.6). */
-			/* The MCU stays awake: WCH's sleep routine (CH55X_Sleep_Deal, removed) switched the D+ pull-up from
-			 * 1.5k to 7.5k, which Windows took for a disconnect (connect/disconnect loop, Code 43). */
+			/* The main loop puts the MCU to sleep (USB_Sleep, if the keyboard defines CH555_SUSPEND_SLEEP) */
 			USB_SleepStatus |= 0x02;
 		}
 		else
@@ -1158,4 +1157,43 @@ void USB_WakeUp_PC( void )
 	mDelaymS( USB_SUSPEND_WAKEUP_DELAY );
 #endif
 }
+
+#ifdef CH555_SUSPEND_SLEEP
+/*******************************************************************************
+* Function Name  : USB_Sleep
+* Description    : MCU sleep while the bus is suspended (USB 2.0 7.1.7.6, 7.2.3)
+* Input          : None
+* Output         : None
+* Return         : None
+*******************************************************************************/
+void USB_Sleep( void )
+{
+	EA = 0;																		/* datasheet 7.2: interrupts off before PD */
+	if( ( USB_IF & bUX_SUSPEND ) || USB_WakeUpSent )							/* the bus may have resumed since the caller's test */
+	{
+		/* Bus activity wakes the MCU; the keys only if the host enabled remote wakeup */
+		ch555_sleep_enter_kb( USB_SleepStatus & 0x01 );
+		SAFE_MOD = 0x55;
+		SAFE_MOD = 0xAA;
+		WAKE_CTRL = bWAK_BY_USB;
+		SAFE_MOD = 0x00;
+		/* Deep sleep (POWER_CFG keeps bPWR_DN_MODE 0) turns the 3.3 V regulator off, and the 1.5K D+ pull-up goes to
+		 * that 3.3 V. With VDD above 4 V, P6.1's 7.5K pull-up to VDD replaces it during the sleep: 7.5K on before
+		 * 1.5K off, and after the wake 1.5K on before 7.5K off (datasheet 10.2.5). */
+		P6_OUT_PU |= 0x02;
+		USB_CTRL &= ~bUX_DP_PU_EN;
+		PCON |= PD;
+		/* Woken by bus activity or a key. Stock 1.04 waits 1 ms before the 1.5K pull-up goes back on. */
+		mDelaymS( 1 );
+		USB_CTRL |= bUX_DP_PU_EN;
+		P6_OUT_PU &= ~0x02;
+		SAFE_MOD = 0x55;
+		SAFE_MOD = 0xAA;
+		WAKE_CTRL = 0;
+		SAFE_MOD = 0x00;
+		ch555_sleep_exit_kb();
+	}
+	EA = 1;
+}
+#endif
 

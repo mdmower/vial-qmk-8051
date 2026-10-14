@@ -18,7 +18,8 @@
 
 /** \brief Run when the USB bus enters suspend
  *
- * Called once per suspend by protocol_pre_task() (ch555); the MCU keeps running and scanning.
+ * Called once per suspend by protocol_pre_task() (ch555). The MCU keeps running and scanning, or with
+ * CH555_SUSPEND_SLEEP sleeps until bus activity or a key wakes it.
  */
 void suspend_power_down(void) {
     suspend_power_down_quantum();
@@ -26,7 +27,7 @@ void suspend_power_down(void) {
 
 /** \brief Run when the USB bus resumes
  *
- * The matrix is scanned throughout suspend, so the key state is still valid and is not cleared.
+ * The matrix is scanned whenever the MCU is awake, so the key state is not cleared.
  */
 void suspend_wakeup_init(void) {
     suspend_wakeup_init_quantum();

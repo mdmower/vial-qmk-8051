@@ -385,14 +385,25 @@ void protocol_post_init(void) {
 #    define USB_RESUME_DELAY_MS 500
 #endif
 
+#if defined(CH555_SUSPEND_SLEEP) && !defined(USB_SLEEP_HOLD_MS)
+/* Awake time after each wake before the MCU sleeps again: a key press that woke it must pass the
+ * matrix scan and the debounce before its report calls wake_host(). */
+#    define USB_SLEEP_HOLD_MS 50
+#endif
+
 void protocol_pre_task(void) {
 #if !defined(NO_USB_STARTUP_CHECK)
     /* Run the QMK suspend hooks when the bus enters or leaves suspend. Unlike LUFA/ChibiOS this does
      * not wait in a loop: the matrix is still scanned while suspended, and a key press wakes the host
      * through wake_host() in the send_report_* functions (if the host enabled remote wakeup).
-     * After that signal, the bus counts as suspended until the host makes a transfer. */
+     * After that signal, the bus counts as suspended until the host makes a transfer.
+     * With CH555_SUSPEND_SLEEP the MCU sleeps while the bus is suspended; bus activity wakes it, and
+     * a key press too if the host enabled remote wakeup. */
     static bool     suspended = false;
     static uint16_t suspend_time;
+#    ifdef CH555_SUSPEND_SLEEP
+    static uint16_t wake_time;
+#    endif
 
     if ((USB_IF & bUX_SUSPEND) != 0 || USB_WakeUpSent) {
         suspend_time = timer_read();
@@ -400,6 +411,12 @@ void protocol_pre_task(void) {
             suspended = true;
             suspend_power_down();
         }
+#    ifdef CH555_SUSPEND_SLEEP
+        if (timer_elapsed(wake_time) >= USB_SLEEP_HOLD_MS) {
+            USB_Sleep();
+            wake_time = timer_read();
+        }
+#    endif
     } else if (suspended && timer_elapsed(suspend_time) >= USB_RESUME_DELAY_MS) {
         suspended = false;
         suspend_wakeup_init();

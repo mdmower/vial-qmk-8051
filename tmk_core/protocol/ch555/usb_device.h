@@ -124,7 +124,14 @@ extern volatile UINT8  ep4_data_wait;											/* endpoint 4 data waiting flag*
 /***********************************************************************************************************************/
 /* Function expansion */
 extern void USB_Device_Init( void );											/* CH55X USB device initialization */
-extern void USB_WakeUp_PC( void );												/* CH55X Usb device wakes up computer */	
+extern void USB_WakeUp_PC( void );												/* CH55X Usb device wakes up computer */
+#ifdef CH555_SUSPEND_SLEEP
+extern void USB_Sleep( void );													/* MCU sleep while the bus is suspended */
+/* Defined by the keyboard: called with interrupts off before the MCU sleeps (key_wake: set up the keys
+ * as a wake source) and after it wakes. */
+void ch555_sleep_enter_kb( UINT8 key_wake );
+void ch555_sleep_exit_kb( void );
+#endif
 
 #pragma save
 #pragma nooverlay
