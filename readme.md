@@ -1,5 +1,9 @@
 # QMK for CH555-family 8051 keyboards
 
+**This repository is kept for its history and is no longer developed.** Branch `k580-ch55x` has the commit history
+of the Redragon K580 RGB bring-up. New work based on more recent QMK is at
+[mdmower/qmk-8051](https://github.com/mdmower/qmk-8051).
+
 A fork of [vial-qmk](https://github.com/vial-kb/vial-qmk), itself a fork of [QMK](https://github.com/qmk/qmk_firmware),
 that builds QMK for 8051 microcontrollers in the WCH CH555 family with the SDCC compiler. The branch `k580-ch55x`
 supports the Redragon K580 RGB (Evision VS11K33A), flashed through the keyboard's own Evision bootloader.
